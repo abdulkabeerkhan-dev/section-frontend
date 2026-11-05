@@ -1,0 +1,8 @@
+node_modules
+.output
+.git
+.npm_cache
+dist
+.wrangler
+*.local
+npm-debug.log*
