@@ -1,0 +1,1 @@
+ALTER TABLE public.activity_log ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general';

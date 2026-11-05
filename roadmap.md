@@ -1,0 +1,4 @@
+- [x] Citation library (private, tags + matter) with Save to Library on cards; View Full Opinion works from the library.
+- [x] Research dashboard: per-query authorities, filters, saved searches, year timeline + overruled chain.
+- [ ] Era filter live comparison — user to run in preview (they chose to test it themselves).
+- [x] Align legal response viewer with status polling, GFM memorandum, and backend precedent/PDF fields (browser contract checks passed; signed-in live query remains unverified).

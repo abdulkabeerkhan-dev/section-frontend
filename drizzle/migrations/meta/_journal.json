@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790195301822,
+      "tag": "0000_citation_library_saved_searches",
+      "breakpoints": true
+    }
+  ]
+}

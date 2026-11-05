@@ -1,0 +1,510 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-authority: var(--authority);
+  --color-authority-strong: var(--authority-strong);
+  --color-authority-paper: var(--authority-paper);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-precedent-danger: var(--precedent-danger);
+  --color-precedent-danger-surface: var(--precedent-danger-surface);
+  --color-precedent-danger-foreground: var(--precedent-danger-foreground);
+  --color-precedent-warning: var(--precedent-warning);
+  --color-precedent-warning-surface: var(--precedent-warning-surface);
+  --color-precedent-warning-foreground: var(--precedent-warning-foreground);
+  --color-precedent-link: var(--precedent-link);
+  --color-precedent-link-hover: var(--precedent-link-hover);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-document: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 10px;
+
+  /* Strict Harvey-inspired monochrome: black, white, and neutral grays only */
+  --background: #f8f8f6;
+  --foreground: #111211;
+
+  --card: #ffffff;
+  --card-foreground: #111211;
+  --popover: #ffffff;
+  --popover-foreground: #111211;
+
+  --primary: #111211;
+  --primary-foreground: #ffffff;
+
+  --secondary: #eeeeeb;
+  --secondary-foreground: #111211;
+
+  --muted: #f0f0ed;
+  --muted-foreground: #666864;
+
+  --accent: #e9ebe8;
+  --accent-foreground: #111211;
+
+  --gold: #363735;
+  --gold-bright: #5b5c59;
+  --gold-foreground: #ffffff;
+  --authority: #363735;
+  --authority-strong: #111211;
+  --authority-paper: #eeeeeb;
+
+  --destructive: #252624;
+  --destructive-foreground: #ffffff;
+
+  --success: #4c4d4a;
+
+  /* Safety-critical exception: adverse precedent treatment must be unmistakable. */
+  --precedent-danger: #dc2626;
+  --precedent-danger-surface: #fef2f2;
+  --precedent-danger-foreground: #7f1d1d;
+  --precedent-warning: #d97706;
+  --precedent-warning-surface: #fffbeb;
+  --precedent-warning-foreground: #78350f;
+  --precedent-link: #1d4ed8;
+  --precedent-link-hover: #1e3a8a;
+
+  --border: #ddddda;
+  --input: #c9cac6;
+  --ring: #111211;
+
+  --sidebar: #111211;
+  --sidebar-foreground: #f7f7f5;
+  --sidebar-border: #30312f;
+}
+
+/* Light theme: paper white and black ink */
+.light {
+  --background: #f8f8f6;
+  --foreground: #111211;
+
+  --card: #ffffff;
+  --card-foreground: #111211;
+  --popover: #ffffff;
+  --popover-foreground: #111211;
+
+  --primary: #111211;
+  --primary-foreground: #ffffff;
+
+  --secondary: #eeeeeb;
+  --secondary-foreground: #111211;
+
+  --muted: #f0f0ed;
+  --muted-foreground: #666864;
+
+  --accent: #e9ebe8;
+  --accent-foreground: #111211;
+
+  --gold: #363735;
+  --gold-bright: #5b5c59;
+  --gold-foreground: #ffffff;
+  --authority: #363735;
+  --authority-strong: #111211;
+  --authority-paper: #eeeeeb;
+
+  --destructive: #252624;
+  --destructive-foreground: #ffffff;
+
+  --success: #4c4d4a;
+
+  --precedent-danger: #dc2626;
+  --precedent-danger-surface: #fef2f2;
+  --precedent-danger-foreground: #7f1d1d;
+  --precedent-warning: #d97706;
+  --precedent-warning-surface: #fffbeb;
+  --precedent-warning-foreground: #78350f;
+  --precedent-link: #1d4ed8;
+  --precedent-link-hover: #1e3a8a;
+
+  --border: #ddddda;
+  --input: #c9cac6;
+  --ring: #111211;
+
+  --sidebar: #111211;
+  --sidebar-foreground: #f7f7f5;
+  --sidebar-border: #30312f;
+}
+
+.dark {
+  --background: #0e0f0e;
+  --foreground: #f5f5f3;
+  --card: #151615;
+  --card-foreground: #f5f5f3;
+  --popover: #151615;
+  --popover-foreground: #f5f5f3;
+  --primary: #f5f5f3;
+  --primary-foreground: #111211;
+  --secondary: #202120;
+  --secondary-foreground: #f5f5f3;
+  --muted: #202120;
+  --muted-foreground: #a4a6a2;
+  --accent: #272927;
+  --accent-foreground: #f5f5f3;
+  --gold: #b7b8b4;
+  --gold-bright: #d0d1cd;
+  --gold-foreground: #0e0f0e;
+  --authority: #b7b8b4;
+  --authority-strong: #eeeeeb;
+  --authority-paper: #202120;
+  --border: #343634;
+  --input: #494b49;
+  --ring: #f5f5f3;
+  --sidebar: #090a09;
+  --sidebar-foreground: #f5f5f3;
+  --sidebar-border: #292b29;
+  --precedent-danger: #f87171;
+  --precedent-danger-surface: #450a0a;
+  --precedent-danger-foreground: #fee2e2;
+  --precedent-warning: #fbbf24;
+  --precedent-warning-surface: #451a03;
+  --precedent-warning-foreground: #fef3c7;
+  --precedent-link: #93c5fd;
+  --precedent-link-hover: #dbeafe;
+}
+
+/* ===== Landing page — Harvey-inspired editorial palette =====
+   Warm off-white paper, near-black ink, neutral grays, refined serif.
+   Scoped to .landing-harvey so the rest of the app keeps its orange theme. */
+.landing-harvey {
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  --background: #f9f9f7;
+  --foreground: #151412;
+
+  --card: #ffffff;
+  --card-foreground: #151412;
+  --popover: #ffffff;
+  --popover-foreground: #151412;
+
+  /* Monochrome primary — ink button on paper */
+  --primary: #0f0e0d;
+  --primary-foreground: #f9f9f7;
+
+  --secondary: #efeee9;
+  --secondary-foreground: #151412;
+
+  --muted: #f0efea;
+  --muted-foreground: #706d66;
+
+  --accent: #e9e8e2;
+  --accent-foreground: #151412;
+
+  --gold: #828280;
+  --gold-bright: #acaba7;
+  --gold-foreground: #151412;
+
+  --destructive: #252624;
+  --destructive-foreground: #f9f9f7;
+
+  --success: #4c4d4a;
+
+  --border: #e2e1da;
+  --input: #e2e1da;
+  --ring: #151412;
+
+  --sidebar: #f3f2ed;
+  --sidebar-foreground: #151412;
+  --sidebar-border: #e2e1da;
+}
+
+.landing-harvey.dark,
+.dark .landing-harvey {
+  --background: #0f0e0d;
+  --foreground: #f9f9f7;
+
+  --card: #151412;
+  --card-foreground: #f9f9f7;
+  --popover: #151412;
+  --popover-foreground: #f9f9f7;
+
+  --primary: #f9f9f7;
+  --primary-foreground: #0f0e0d;
+
+  --secondary: #1c1b18;
+  --secondary-foreground: #f9f9f7;
+
+  --muted: #1a1917;
+  --muted-foreground: #828280;
+
+  --accent: #20201d;
+  --accent-foreground: #f9f9f7;
+
+  --gold: #acaba7;
+  --gold-bright: #c9c8c4;
+  --gold-foreground: #0f0e0d;
+
+  --border: #2a2926;
+  --input: #2a2926;
+  --ring: #f9f9f7;
+
+  --sidebar: #141311;
+  --sidebar-foreground: #f9f9f7;
+  --sidebar-border: #2a2926;
+}
+
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--foreground);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.65;
+    letter-spacing: -0.003em;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  textarea::placeholder,
+  input::placeholder {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--muted-foreground) !important;
+  }
+
+  button,
+  [role="tab"],
+  label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+  }
+}
+
+@keyframes amicus-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes amicus-pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 50%, transparent);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--gold) 0%, transparent);
+    opacity: 0.82;
+  }
+}
+
+@utility fade-up {
+  opacity: 0;
+  animation: amicus-fade-up 0.45s ease forwards;
+}
+
+@utility pulse-gold {
+  animation: amicus-pulse-gold 1.4s ease-in-out infinite;
+}
+
+/* Cinematic slow Ken-Burns zoom for the hero video */
+@keyframes hero-video-zoom {
+  0% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1.16);
+  }
+}
+
+.hero-video-zoom {
+  animation: hero-video-zoom 24s ease-in-out infinite alternate;
+}
+
+/* Slow breathing glow for ember accents */
+@keyframes hero-glow-pulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.15);
+  }
+}
+
+.hero-glow {
+  animation: hero-glow-pulse 7s ease-in-out infinite;
+}
+
+/* Gentle entrance for the hero headline + input */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-rise {
+  opacity: 0;
+  animation: hero-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Landing page entrance animations */
+@keyframes amicus-landing-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.landing-in {
+  opacity: 0;
+  animation: amicus-landing-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes amicus-fade-soft {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-soft {
+  opacity: 0;
+  animation: amicus-fade-soft 0.9s ease forwards;
+}
+
+/* Slow drifting gold aura for the landing backdrop */
+@keyframes amicus-aura {
+  0%, 100% { opacity: 0.4; transform: translate(0, 0) scale(1); }
+  50% { opacity: 0.7; transform: translate(2%, -2%) scale(1.08); }
+}
+
+.landing-aura {
+  animation: amicus-aura 12s ease-in-out infinite;
+}
+
+/* Continuous, never-ending glow + breathing on the Amicus "A" mark */
+@keyframes amicus-a-glow {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    transform: scale(1.06);
+    text-shadow: 0 0 28px color-mix(in oklab, var(--gold) 60%, transparent);
+  }
+}
+
+.amicus-a-glow {
+  transform-origin: center;
+  animation: amicus-a-glow 2.6s ease-in-out infinite;
+}
+
+/* ===== Section mark — standalone § glyph ===== */
+.amicus-emblem {
+  animation: amicus-emblem-float 7s ease-in-out infinite;
+}
+
+@keyframes amicus-emblem-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ===== Chat workspace aurora ambiance (distinct from the auth video) ===== */
+.chat-aurora {
+  background:
+    radial-gradient(55% 50% at 22% 18%, color-mix(in oklab, var(--foreground) 8%, transparent) 0%, transparent 60%),
+    radial-gradient(50% 50% at 80% 12%, color-mix(in oklab, var(--foreground) 5%, transparent) 0%, transparent 60%),
+    radial-gradient(60% 55% at 65% 88%, color-mix(in oklab, var(--foreground) 4%, transparent) 0%, transparent 65%);
+  filter: blur(14px);
+  animation: chat-aurora-drift 20s ease-in-out infinite;
+}
+
+@keyframes chat-aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+  33% { transform: translate3d(2%, -2%, 0) scale(1.06); opacity: 1; }
+  66% { transform: translate3d(-2%, 1%, 0) scale(1.04); opacity: 0.92; }
+}
+
+
+
+
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-video-zoom,
+  .hero-glow,
+  .hero-rise,
+  .landing-in,
+  .fade-soft,
+  .landing-aura,
+  .amicus-emblem,
+  .chat-aurora,
+  .amicus-a-glow {
+    animation: none;
+  }
+  .hero-rise,
+  .landing-in,
+  .fade-soft {
+    opacity: 1;
+  }
+}
+
+.sidebar-scroll { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, currentColor 20%, transparent) transparent; }
+html, body { overflow-x: hidden; }
