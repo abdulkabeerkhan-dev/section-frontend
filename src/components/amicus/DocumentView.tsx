@@ -99,12 +99,6 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
             {copied ? "Copied" : "Copy text"}
           </button>
         </div>
-        {docId && (
-          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            All citations verified against source
-          </span>
-        )}
       </div>
 
       <div className="px-3 py-5 sm:px-6 sm:py-7">
