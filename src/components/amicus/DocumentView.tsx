@@ -99,6 +99,9 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
             {copied ? "Copied" : "Copy text"}
           </button>
         </div>
+        <span className="text-[11.5px] text-muted-foreground">
+          Database current as of November 2026
+        </span>
       </div>
 
       <div className="px-3 py-5 sm:px-6 sm:py-7">

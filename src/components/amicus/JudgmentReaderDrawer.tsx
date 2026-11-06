@@ -92,6 +92,10 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
   const [details, setDetails] = useState<JudgmentDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("ratio");
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfTimedOut, setPdfTimedOut] = useState(false);
+  const [pdfRetryKey, setPdfRetryKey] = useState(0);
 
   // Strictly bind to a stable identifier — never the title string.
   const idToFetch = useMemo(
@@ -102,6 +106,24 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
   const fallbackText = useMemo(() => {
     return card.raw_judgment_text || card.holding || "";
   }, [card.raw_judgment_text, card.holding]);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab("ratio");
+    }
+  }, [open, idToFetch]);
+
+  useEffect(() => {
+    if (activeTab !== "pdf" || !activePdfUrl) return;
+    setPdfLoading(true);
+    setPdfTimedOut(false);
+    const timer = window.setTimeout(() => {
+      setPdfTimedOut(true);
+      setPdfLoading(false);
+      console.warn("[PDF_LOAD_TIMEOUT] Case:", idToFetch, "Url:", activePdfUrl);
+    }, 15000);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, activePdfUrl, pdfRetryKey, idToFetch]);
 
   // Fetch the complete judgment record every time the drawer opens.
   useEffect(() => {
@@ -289,7 +311,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
           </SheetDescription>
         </SheetHeader>
 
-        <Tabs defaultValue="ratio" className="flex min-h-0 flex-1 flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
           <div className="border-b border-border px-5 py-3">
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
               <TabsTrigger value="ratio" className="text-[12.5px]">
@@ -315,7 +337,19 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
               {holdingText ? (
                 <Block label="Holding / Ratio Decidendi" value={holdingText} />
               ) : (
-                <Empty>No ratio recorded for this judgment.</Empty>
+                <div className="rounded-md border border-dashed border-border p-5 text-center">
+                  <p className="text-[13px] text-muted-foreground">Ratio not available for this case.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab("order")}
+                    className="mt-3 h-8 gap-1.5 text-[12px] border-primary/40 text-primary hover:bg-primary/10"
+                  >
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
+                    View Full Order Text
+                  </Button>
+                </div>
               )}
               <Block label="Why it's relevant" value={card.why_relevant} />
             </TabsContent>
@@ -414,16 +448,81 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                     </div>
                   </div>
 
-                  <div className="relative min-h-[28rem] w-full flex-1 overflow-hidden rounded-md border border-border bg-muted/20">
-                    <iframe
-                      src={activePdfUrl}
-                      title="Official judgment PDF"
-                      className="h-full min-h-[28rem] w-full rounded-md border-0"
-                    />
-                  </div>
+                  {pdfTimedOut ? (
+                    <div className="rounded-md border border-border bg-muted/30 p-6 text-center">
+                      <p className="text-[13.5px] font-medium text-foreground">
+                        PDF viewer timed out (15-second response limit reached).
+                      </p>
+                      <p className="mt-1 text-[12.5px] text-muted-foreground">
+                        The court report scan is taking longer than expected to display inline.
+                      </p>
+                      <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPdfRetryKey((k) => k + 1)}
+                          className="h-8 gap-1.5 text-[12px]"
+                        >
+                          Retry Loading PDF
+                        </Button>
+                        <a
+                          href={activePdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gold/40 bg-gold/15 px-3 text-[12px] font-semibold text-gold transition-colors hover:bg-gold/25"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                          Open Direct PDF
+                        </a>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setActiveTab("order")}
+                          className="h-8 gap-1.5 text-[12px]"
+                        >
+                          <FileText className="h-3.5 w-3.5" aria-hidden />
+                          Read Full Order Text
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative min-h-[28rem] w-full flex-1 overflow-hidden rounded-md border border-border bg-muted/20">
+                      {pdfLoading && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-xs">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
+                          <span className="text-[12.5px] text-muted-foreground">
+                            Loading official court report scan…
+                          </span>
+                        </div>
+                      )}
+                      <iframe
+                        key={`${activePdfUrl}-${pdfRetryKey}`}
+                        src={activePdfUrl}
+                        title="Official judgment PDF"
+                        onLoad={() => setPdfLoading(false)}
+                        className="h-full min-h-[28rem] w-full rounded-md border-0"
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
-                <Empty>Official court report PDF is not yet available for this judgment.</Empty>
+                <div className="rounded-md border border-dashed border-border p-6 text-center">
+                  <p className="text-[13px] text-muted-foreground">
+                    Official court report PDF is not available in the database for this judgment.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab("order")}
+                    className="mt-3 h-8 gap-1.5 text-[12px] border-primary/40 text-primary hover:bg-primary/10"
+                  >
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
+                    View Full Order Text
+                  </Button>
+                </div>
               )}
             </TabsContent>
 

@@ -174,7 +174,10 @@ export function AnalysisView({
       <article className="font-sans text-[15px] leading-7">
         <header className="flex flex-col gap-5 border-b border-border bg-card px-5 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-authority">Research memorandum</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-authority">Research memorandum</p>
+              <span className="text-[10px] text-muted-foreground">• Database current as of November 2026</span>
+            </div>
             <h2 className="mt-2 font-serif text-3xl text-foreground">Legal opinion</h2>
           </div>
           {hasBody && (
