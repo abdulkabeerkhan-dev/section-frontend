@@ -240,8 +240,8 @@ export function AnalysisView({
         {hasBody && !isDrafting && (
           <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-sm border border-border bg-muted/30 p-5 sm:flex-row sm:items-center">
             <div>
-              <p className="font-serif text-base font-semibold text-foreground">Courtroom Drafting Handoff</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Transfer this verified opinion to Counsel to draft high court petitions with Article 189 bindings.</p>
+              <p className="font-serif text-base font-semibold text-foreground">Pleading & Notice Drafting</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Transfer this research record to Counsel to draft court pleadings, plaints, or legal notices.</p>
             </div>
             <Link
               to="/assistants/mike"
