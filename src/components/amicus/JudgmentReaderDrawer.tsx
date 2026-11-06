@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Download, Loader2, ShieldCheck, BookOpen, FileText } from "lucide-react";
+import { Check, Copy, Download, Loader2, ShieldCheck, BookOpen, FileText, ExternalLink } from "lucide-react";
 import { useAuth } from "@clerk/clerk-react";
 
-import { getJudgmentText, resolvePdfUrl, type PrecedentCard } from "@/lib/api";
+import { getJudgmentDetails, resolvePdfUrl, type PrecedentCard, type JudgmentDetails } from "@/lib/api";
 import { cleanCaseTitle } from "@/lib/case-title";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,7 @@ interface JudgmentReaderDrawerProps {
 export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReaderDrawerProps) {
   const { getToken } = useAuth();
   const [fullText, setFullText] = useState<string>("");
+  const [details, setDetails] = useState<JudgmentDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,31 +103,30 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
     return card.raw_judgment_text || card.holding || "";
   }, [card.raw_judgment_text, card.holding]);
 
-  const pdfUrl = useMemo(
-    () => resolvePdfUrl(card.pdf_url, card.judgment_id || card.case_id),
-    [card.pdf_url, card.judgment_id, card.case_id],
-  );
-
-
-  // Fetch the complete judgment text every time the drawer opens.
-  // If the API returns 404 or any other error, we gracefully fall back to
-  // the card's inline raw judgment text or holding so the user still sees
-  // useful content instead of an error screen.
+  // Fetch the complete judgment record every time the drawer opens.
   useEffect(() => {
     if (!open || !idToFetch) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
     setFullText("");
+    setDetails(null);
     (async () => {
       try {
-        const token = await getToken({ skipCache: true });
-        if (!token) throw new Error("No active session.");
-        const text = await getJudgmentText(idToFetch, token);
-        if (!cancelled) setFullText(text);
+        let token: string | undefined;
+        try {
+          token = (await getToken({ skipCache: true })) || undefined;
+        } catch {
+          // Token is optional for public judgment reader
+        }
+        const data = await getJudgmentDetails(idToFetch, token);
+        if (!cancelled) {
+          setFullText(data.full_text || fallbackText);
+          setDetails(data);
+        }
       } catch (err) {
         if (!cancelled) {
-          // On 404 or any failure, surface the fallback content silently.
+          // On failure, surface fallback content silently.
           setFullText(fallbackText);
           setError(
             err instanceof Error && err.message.includes("404")
@@ -143,6 +143,29 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, idToFetch]);
+
+  const holdingText =
+    card.holding ||
+    card.ratio_decidendi ||
+    details?.holding ||
+    details?.ratio_decidendi ||
+    "";
+
+  const issueText =
+    card.issue ||
+    details?.legal_issue ||
+    details?.issue ||
+    "";
+
+  const effectiveStatutes =
+    card.statutes_invoked && card.statutes_invoked.length > 0
+      ? card.statutes_invoked
+      : (details?.statutes_invoked || []);
+
+  const activePdfUrl = useMemo(
+    () => resolvePdfUrl(card.pdf_url || details?.pdf_url, card.judgment_id || card.case_id),
+    [card.pdf_url, details?.pdf_url, card.judgment_id, card.case_id],
+  );
 
   const orderText = fullText;
 
@@ -235,15 +258,17 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                 )}
                 {card.verified_source ? "Verified Source" : "General Reference"}
               </span>
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gold/40 bg-gold/10 px-3 text-[12px] font-semibold text-gold transition-colors hover:bg-gold/20"
-              >
-                <FileText className="h-3.5 w-3.5" aria-hidden />
-                View PDF
-              </a>
+              {activePdfUrl && (
+                <a
+                  href={activePdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gold/40 bg-gold/10 px-3 text-[12px] font-semibold text-gold transition-colors hover:bg-gold/20"
+                >
+                  <FileText className="h-3.5 w-3.5" aria-hidden />
+                  View PDF
+                </a>
+              )}
 
               <Button
                 type="button"
@@ -287,8 +312,8 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             <TabsContent value="ratio" className="mt-0 space-y-5">
-              {card.holding ? (
-                <Block label="Holding" value={card.holding} />
+              {holdingText ? (
+                <Block label="Holding / Ratio Decidendi" value={holdingText} />
               ) : (
                 <Empty>No ratio recorded for this judgment.</Empty>
               )}
@@ -296,20 +321,20 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
             </TabsContent>
 
             <TabsContent value="issue" className="mt-0 space-y-5">
-              {card.issue ? (
-                <Block label="Issue" value={card.issue} />
+              {issueText ? (
+                <Block label="Legal Issue & Scope" value={issueText} />
               ) : (
                 <Empty>No legal issue recorded for this judgment.</Empty>
               )}
-              <Block label="Outcome" value={card.outcome} />
+              <Block label="Outcome / Disposition" value={card.outcome} />
             </TabsContent>
 
             <TabsContent value="statutes" className="mt-0">
-              {card.statutes_invoked.length === 0 ? (
+              {effectiveStatutes.length === 0 ? (
                 <Empty>No statutes were recorded for this judgment.</Empty>
               ) : (
                 <ul className="space-y-3">
-                  {card.statutes_invoked.map((s, i) => (
+                  {effectiveStatutes.map((s, i) => (
                     <li
                       key={`${s.name}-${i}`}
                       className="rounded-md border border-border bg-muted/30 px-3.5 py-3"
@@ -356,12 +381,50 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
               )}
             </TabsContent>
 
-            <TabsContent value="pdf" className="mt-0 h-full">
-              <iframe
-                src={pdfUrl}
-                title="Official judgment PDF"
-                className="h-full min-h-[24rem] w-full rounded-md border border-border bg-muted"
-              />
+            <TabsContent value="pdf" className="mt-0 space-y-4">
+              {activePdfUrl ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3.5">
+                    <div className="space-y-0.5">
+                      <p className="text-[13px] font-semibold text-foreground">
+                        Authentic Law Reporter Scanned PDF
+                      </p>
+                      <p className="text-[11.5px] text-muted-foreground">
+                        Official publication scan from superior court law reporter (SCMR / PLD / CLC).
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={activePdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gold/40 bg-gold/15 px-3 text-[12px] font-semibold text-gold transition-colors hover:bg-gold/25"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                        Open in New Tab
+                      </a>
+                      <a
+                        href={activePdfUrl}
+                        download
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
+                      >
+                        <Download className="h-3.5 w-3.5" aria-hidden />
+                        Download PDF
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="relative min-h-[28rem] w-full flex-1 overflow-hidden rounded-md border border-border bg-muted/20">
+                    <iframe
+                      src={activePdfUrl}
+                      title="Official judgment PDF"
+                      className="h-full min-h-[28rem] w-full rounded-md border-0"
+                    />
+                  </div>
+                </>
+              ) : (
+                <Empty>Official court report PDF is not yet available for this judgment.</Empty>
+              )}
             </TabsContent>
 
           </div>

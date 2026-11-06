@@ -239,26 +239,34 @@ function base(): string | undefined {
   return BASE_URL ? BASE_URL.replace(/\/$/, "") : undefined;
 }
 
-/** Obsolete backend hosts whose PDF links no longer work. */
-const STALE_PDF_HOST = /\.up\.railway\.app/i;
-
-/** Public PDF stream endpoint on the active backend (no auth required). */
+/** Public PDF stream endpoint on the active backend. */
 export function judgmentPdfUrl(judgmentId: string | undefined | null): string | undefined {
   const b = base();
   if (!b || !judgmentId) return undefined;
-  return `${b}/api/judgments/${encodeURIComponent(judgmentId)}/pdf`;
+  return `${b}/judgment-pdf/${encodeURIComponent(judgmentId)}`;
 }
 
 /**
  * Use the backend-provided pdf_url as-is. If it points at an obsolete
  * deployment, rebuild it from the active backend; otherwise fall back to the
- * public /api/judgments/{id}/pdf endpoint.
+ * backend /judgment-pdf/{id} endpoint.
  */
 export function resolvePdfUrl(
   pdfUrl: string | undefined | null,
   judgmentId: string | undefined | null,
 ): string | undefined {
-  if (pdfUrl && !STALE_PDF_HOST.test(pdfUrl)) return pdfUrl;
+  const b = base();
+  if (pdfUrl && pdfUrl.startsWith("http")) {
+    if (b && !pdfUrl.startsWith(b)) {
+      try {
+        const u = new URL(pdfUrl);
+        return `${b}${u.pathname}${u.search}`;
+      } catch {
+        return pdfUrl;
+      }
+    }
+    return pdfUrl;
+  }
   return judgmentPdfUrl(judgmentId);
 }
 
@@ -771,13 +779,15 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
   const cardSource = Array.isArray(rec.precedent_cards) ? (rec.precedent_cards as unknown[]) : [];
   const precedent_cards: PrecedentCard[] = cardSource.map((c) => {
     const o = (c && typeof c === "object" ? c : {}) as Record<string, unknown>;
-    const statutesRaw = Array.isArray(o.statutes_invoked) ? (o.statutes_invoked as unknown[]) : [];
+    const statutesRaw = Array.isArray(o.statutes_invoked) && o.statutes_invoked.length > 0
+      ? (o.statutes_invoked as unknown[])
+      : (Array.isArray(o.sections) ? (o.sections as unknown[]) : (Array.isArray(o.statutes) ? (o.statutes as unknown[]) : []));
     const statutes_invoked: StatuteRef[] = statutesRaw
       .map((s) => {
         if (typeof s === "string") return { name: asString(s) ?? "", explanation: "" };
         const so = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
         return {
-          name: asString(so.name) ?? asString(so.statute) ?? "",
+          name: asString(so.name) ?? asString(so.statute) ?? asString(so.section) ?? "",
           explanation: asString(so.explanation) ?? asString(so.description) ?? "",
         };
       })
@@ -794,7 +804,7 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
       citation: asString(o.citation) ?? extractCitation(rawName),
       court: asString(o.court) ?? undefined,
       year: Number(asString(o.year)) || undefined,
-      ratio_decidendi: asString(o.ratio_decidendi) ?? asString(o.holding) ?? undefined,
+      ratio_decidendi: asString(o.ratio_decidendi) ?? asString(o.holding) ?? asString(o.summary) ?? asString(o.preview) ?? undefined,
       docket_number: asString(o.docket_number) ?? undefined,
       decision_date: decisionDate ?? undefined,
       judgment_id: judgmentId ?? undefined,
@@ -806,9 +816,9 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
         "",
       outcome: asString(o.outcome) ?? "",
       verified_source: o.verified_source === true,
-      issue: asString(o.issue) ?? asString(o.legal_issue) ?? "",
-      holding: asString(o.ratio_decidendi) ?? asString(o.holding) ?? "",
-      why_relevant: asString(o.why_relevant) ?? asString(o.relevance_reason) ?? "",
+      issue: asString(o.issue) ?? asString(o.legal_issue) ?? asString(o.question) ?? "",
+      holding: asString(o.ratio_decidendi) ?? asString(o.holding) ?? asString(o.summary) ?? asString(o.preview) ?? asString(o.snippet) ?? "",
+      why_relevant: asString(o.why_relevant) ?? asString(o.relevance_reason) ?? asString(o.relevance) ?? "",
       authority_strength: asString(o.authority_strength) ?? undefined,
       source_type: asString(o.source_type) ?? undefined,
       important_paragraphs: Array.isArray(o.important_paragraphs)
@@ -854,27 +864,46 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
   };
 }
 
-/** Fetch the complete judgment text for a case from the backend. */
-export async function getJudgmentText(caseId: string, token: string): Promise<string> {
+export interface JudgmentDetails {
+  full_text: string;
+  holding?: string;
+  ratio_decidendi?: string;
+  legal_issue?: string;
+  issue?: string;
+  statutes_invoked?: StatuteRef[];
+  pdf_url?: string;
+  court_name?: string;
+  case_title?: string;
+  year?: number;
+}
+
+/** Fetch complete judgment metadata and text from the backend. */
+export async function getJudgmentDetails(caseId: string, token?: string): Promise<JudgmentDetails> {
   const b = base();
   if (!b) throw new Error("API is not configured. Set VITE_BACKEND_URL.");
-  if (!token) throw new Error("Authentication token is missing.");
+
+  const headers: Record<string, string> = {
+    "ngrok-skip-browser-warning": "true",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${b}/judgment/${encodeURIComponent(caseId)}`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "ngrok-skip-browser-warning": "true",
-    },
+    headers,
   });
 
   if (!res.ok) throw new Error(`Could not load the full judgment text (${res.status}).`);
 
   const ct = res.headers.get("content-type") ?? "";
-  if (!ct.includes("json")) return (await res.text()).trim();
+  if (!ct.includes("json")) {
+    const rawTxt = (await res.text()).trim();
+    return { full_text: rawTxt };
+  }
 
   const json: unknown = await res.json().catch(() => null);
-  if (typeof json === "string") return json.trim();
+  if (typeof json === "string") return { full_text: json.trim() };
   const d = (json && typeof json === "object" ? json : {}) as Record<string, unknown>;
   const nested = (d.judgment && typeof d.judgment === "object" ? d.judgment : {}) as Record<string, unknown>;
   const text =
@@ -886,8 +915,43 @@ export async function getJudgmentText(caseId: string, token: string): Promise<st
     asString(nested.full_text) ??
     asString(nested.text) ??
     "";
-  if (!text) throw new Error("The full judgment text is not available for this case.");
-  return text;
+
+  const statutesRaw = Array.isArray(d.statutes_invoked) && d.statutes_invoked.length > 0
+    ? (d.statutes_invoked as unknown[])
+    : (Array.isArray(d.sections) ? (d.sections as unknown[]) : []);
+  const statutes_invoked: StatuteRef[] = statutesRaw
+    .map((s) => {
+      if (typeof s === "string") return { name: asString(s) ?? "", explanation: "" };
+      const so = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
+      return {
+        name: asString(so.name) ?? asString(so.statute) ?? "",
+        explanation: asString(so.explanation) ?? asString(so.description) ?? "",
+      };
+    })
+    .filter((s) => s.name);
+
+  const holding = asString(d.holding) ?? asString(d.ratio_decidendi) ?? asString(d.headnote);
+  const issue = asString(d.legal_issue) ?? asString(d.issue);
+
+  return {
+    full_text: text,
+    holding: holding ?? undefined,
+    ratio_decidendi: holding ?? undefined,
+    legal_issue: issue ?? undefined,
+    issue: issue ?? undefined,
+    statutes_invoked,
+    pdf_url: asString(d.pdf_url) ?? resolvePdfUrl(undefined, caseId),
+    court_name: asString(d.court_name) ?? asString(d.court) ?? undefined,
+    case_title: asString(d.case_title) ?? asString(d.title) ?? undefined,
+    year: Number(asString(d.year)) || undefined,
+  };
+}
+
+/** Fetch the complete judgment text for a case from the backend. */
+export async function getJudgmentText(caseId: string, token?: string): Promise<string> {
+  const details = await getJudgmentDetails(caseId, token);
+  if (!details.full_text) throw new Error("The full judgment text is not available for this case.");
+  return details.full_text;
 }
 
 /** Response from POST /query/{job_id}/continue. */
