@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.18.0
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=4096
       - key: NITRO_PRESET
         value: node-server
       - key: VITE_BACKEND_URL
