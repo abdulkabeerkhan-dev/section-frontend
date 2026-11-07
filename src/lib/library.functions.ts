@@ -34,14 +34,19 @@ const tagList = z.array(z.string().trim().min(1).max(40)).max(20);
 export const listSavedPrecedents = createServerFn({ method: "GET" })
   .middleware([requireClerkAuth])
   .handler(async ({ context }): Promise<SavedPrecedent[]> => {
-    const { data, error } = await (await db())
-      .from("saved_precedents")
-      .select("id, card_key, citation, case_title, card, tags, matter, note, created_at")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (error) throw new Error(error.message);
-    return (data ?? []) as SavedPrecedent[];
+    try {
+      const { data, error } = await (await db())
+        .from("saved_precedents")
+        .select("id, card_key, citation, case_title, card, tags, matter, note, created_at")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) return [];
+      return (data ?? []) as SavedPrecedent[];
+    } catch (err) {
+      console.warn("[library] listSavedPrecedents fallback:", err);
+      return [];
+    }
   });
 
 export const savePrecedent = createServerFn({ method: "POST" })
@@ -93,13 +98,18 @@ export const removeSavedPrecedent = createServerFn({ method: "POST" })
 export const listSavedSearches = createServerFn({ method: "GET" })
   .middleware([requireClerkAuth])
   .handler(async ({ context }): Promise<SavedSearch[]> => {
-    const { data, error } = await (await db())
-      .from("saved_searches")
-      .select("id, name, filters, created_at")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return (data ?? []) as SavedSearch[];
+    try {
+      const { data, error } = await (await db())
+        .from("saved_searches")
+        .select("id, name, filters, created_at")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return (data ?? []) as SavedSearch[];
+    } catch (err) {
+      console.warn("[library] listSavedSearches fallback:", err);
+      return [];
+    }
   });
 
 export const createSavedSearch = createServerFn({ method: "POST" })

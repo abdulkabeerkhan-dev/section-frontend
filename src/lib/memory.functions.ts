@@ -40,16 +40,21 @@ function normalizeCategory(value: string): MemoryCategory {
 export const listMyMemory = createServerFn({ method: "GET" })
   .middleware([requireClerkAuth])
   .handler(async ({ context }): Promise<MemoryRecord[]> => {
-    const sb = await getAdminClient();
-    const { data } = await sb
-      .from("user_memory")
-      .select("id, category, content, source, created_at, updated_at")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: true });
-    return ((data ?? []) as MemoryRecord[]).map((r) => ({
-      ...r,
-      category: normalizeCategory(r.category),
-    }));
+    try {
+      const sb = await getAdminClient();
+      const { data } = await sb
+        .from("user_memory")
+        .select("id, category, content, source, created_at, updated_at")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: true });
+      return ((data ?? []) as MemoryRecord[]).map((r) => ({
+        ...r,
+        category: normalizeCategory(r.category),
+      }));
+    } catch (err) {
+      console.warn("[memory] listMyMemory fallback:", err);
+      return [];
+    }
   });
 
 export const addMemory = createServerFn({ method: "POST" })

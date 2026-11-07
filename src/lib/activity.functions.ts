@@ -56,12 +56,17 @@ export const logActivity = createServerFn({ method: "POST" })
 export const listMyActivity = createServerFn({ method: "GET" })
   .middleware([requireClerkAuth])
   .handler(async ({ context }): Promise<ActivityRecord[]> => {
-    const sb = await getAdminClient();
-    const { data } = await sb
-      .from("activity_log")
-      .select("id, thread_id, mode, question, response, created_at, category")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: true })
-      .limit(300);
-    return (data ?? []) as ActivityRecord[];
+    try {
+      const sb = await getAdminClient();
+      const { data } = await sb
+        .from("activity_log")
+        .select("id, thread_id, mode, question, response, created_at, category")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: true })
+        .limit(300);
+      return (data ?? []) as ActivityRecord[];
+    } catch (err) {
+      console.warn("[activity] listMyActivity fallback:", err);
+      return [];
+    }
   });
