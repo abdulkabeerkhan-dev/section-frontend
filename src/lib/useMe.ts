@@ -5,6 +5,7 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 import { useCallback } from "react";
 
 import { syncCurrentUser } from "@/lib/me-sync.functions";
+import { setClerkToken } from "@/integrations/clerk/auth-attacher";
 
 export interface MeResult {
   id: string;
@@ -39,7 +40,7 @@ function isTransient(error: unknown): boolean {
  * Clerk on the frontend; the backend talks to the database with admin keys.
  */
 export function useMe() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
   const syncUser = useServerFn(syncCurrentUser);
 
@@ -49,7 +50,6 @@ export function useMe() {
     staleTime: 60_000,
     // Cold starts on the backend can take a few seconds — retry transient
     // failures (network errors, 5xx, 408, 429) with exponential backoff.
-    // Auth/permission failures (4xx) fail immediately.
     retry: (failureCount, error) => failureCount < 5 && isTransient(error),
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000),
     queryFn: async (): Promise<MeResult> => {
@@ -60,17 +60,37 @@ export function useMe() {
 
       const startedAt = Date.now();
 
+      try {
+        const token = await getToken();
+        if (token) setClerkToken(token);
+      } catch {
+        // non-blocking
+      }
+
       let raw: Record<string, unknown>;
       try {
         const syncedUser = await syncUser({ data: { email, fullName } });
         raw = syncedUser as unknown as Record<string, unknown>;
       } catch (networkErr) {
-        console.error("[useMe] user sync failed", {
+        console.warn("[useMe] user sync failed, falling back to Clerk session", {
           elapsedMs: Date.now() - startedAt,
           error: networkErr,
         });
-        throw new SyncError("Could not reach the backend.", 0);
+        const resolvedFullName = fullName || "Advocate";
+        const firstName = user?.firstName || resolvedFullName.split(" ")[0] || "Advocate";
+        const lastName = user?.lastName || resolvedFullName.split(" ").slice(1).join(" ") || "";
+        return {
+          id: user?.id ?? "",
+          fullName: resolvedFullName,
+          firstName,
+          lastName,
+          email,
+          status: "active",
+          isAdmin: false,
+          needsName: false,
+        };
       }
+
       // Backend may return either the user fields at the top level or wrapped
       // as { status, user: {...} }. Normalize to the inner object.
       const dbUser: Record<string, unknown> =

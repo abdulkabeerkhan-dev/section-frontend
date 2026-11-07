@@ -42,7 +42,17 @@ export const syncCurrentUser = createServerFn({ method: "POST" })
       "https://lawyer-backend-9e7q.onrender.com"
     ).replace(/\/$/, "");
 
-    const authorization = getRequest().headers.get("authorization");
+    let authorization = getRequest().headers.get("authorization");
+    if (!authorization) {
+      const cookieHeader = getRequest().headers.get("cookie");
+      if (cookieHeader) {
+        const match = cookieHeader.match(/(?:^|;\s*)__session=([^;]+)/);
+        if (match) {
+          authorization = `Bearer ${decodeURIComponent(match[1])}`;
+        }
+      }
+    }
+
     if (!authorization) throw new Error("No active session found.");
 
     const response = await fetch(`${backendUrl}/users/sync`, {

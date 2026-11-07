@@ -1,10 +1,9 @@
 // Server-side middleware that authenticates server functions using a Clerk
 // session token. Replaces the legacy Supabase auth middleware.
 //
-// It extracts the `Authorization: Bearer <token>` header, verifies the Clerk
-// token, and injects the Clerk user id (`userId`) and `claims` into context.
-// Data access in handlers uses the service-role admin client (loaded inside the
-// handler), since the frontend no longer uses Supabase Auth.
+// It extracts the `Authorization: Bearer <token>` header (or falls back to the
+// Clerk `__session` cookie), verifies the Clerk token, and injects the Clerk user
+// id (`userId`) and `claims` into context.
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
@@ -17,17 +16,24 @@ export const requireClerkAuth = createMiddleware({ type: "function" }).server(
       throw new Error("Unauthorized: No request headers available");
     }
 
+    let token = "";
     const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
-      throw new Error("Unauthorized: No authorization header provided");
-    }
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new Error("Unauthorized: Only Bearer tokens are supported");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice("Bearer ".length).trim();
     }
 
-    const token = authHeader.slice("Bearer ".length).trim();
     if (!token) {
-      throw new Error("Unauthorized: No token provided");
+      const cookieHeader = request.headers.get("cookie");
+      if (cookieHeader) {
+        const match = cookieHeader.match(/(?:^|;\s*)__session=([^;]+)/);
+        if (match) {
+          token = decodeURIComponent(match[1]);
+        }
+      }
+    }
+
+    if (!token) {
+      throw new Error("Unauthorized: No authorization token provided");
     }
 
     const claims = await verifyClerkToken(token);
