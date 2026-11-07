@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build && (test -d .output/public || mkdir -p .output/public)"
-  publish = ".output/public"
+  command = "npm run build && (if [ -d .output/public ] && [ ! -d dist ]; then cp -r .output/public dist; fi) && (if [ -d dist ] && [ -d .output/public ]; then cp -r .output/public/* dist/ 2>/dev/null || true; fi) && (if [ -d dist ] && [ ! -d .output/public ]; then mkdir -p .output/public && cp -r dist/* .output/public/; fi) && (if [ ! -d dist ]; then mkdir -p dist; fi) && echo '=== Build output directory contents: ===' && ls -la dist/"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.18.0"
