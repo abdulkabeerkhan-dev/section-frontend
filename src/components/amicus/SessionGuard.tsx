@@ -82,14 +82,13 @@ export function SessionGuard({ children, requireAdmin = false }: SessionGuardPro
   if (!isLoaded) return <FullScreenLoader />;
   if (!isSignedIn) return null;
 
-  // Signed in, but the backend sync failed — show a recoverable error screen
-  // instead of redirecting (which would loop back through /auth).
-  if (isError) {
+  // Signed in, but both backend sync and local session failed
+  if (isError && !me) {
     return <SessionError onRetry={() => refetch()} onSignOut={logout} />;
   }
 
-  if (isLoading || !me) return <FullScreenLoader />;
-  if (me.status === "inactive") return null;
-  if (requireAdmin && !me.isAdmin) return null;
+  if (isLoading && !me) return <FullScreenLoader />;
+  if (me && me.status === "inactive") return null;
+  if (requireAdmin && me && !me.isAdmin) return null;
   return <>{children}</>;
 }
