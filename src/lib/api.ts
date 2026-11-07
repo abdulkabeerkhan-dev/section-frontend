@@ -598,7 +598,15 @@ export async function generate(
       continue;
     }
     // Job not registered yet (race right after POST) — keep polling.
-    if (pollRes.status === 404) { missCount++; continue; }
+    if (pollRes.status === 404) {
+      missCount++;
+      if (missCount > 5) {
+        const msg = "The query session was interrupted by a server restart. Please try asking your question again.";
+        toast.error(msg);
+        throw new Error(msg);
+      }
+      continue;
+    }
 
     if (!pollRes.ok) {
       let parsed: unknown = null;
