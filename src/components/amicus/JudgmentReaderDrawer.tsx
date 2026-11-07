@@ -107,6 +107,29 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
     return card.raw_judgment_text || card.holding || "";
   }, [card.raw_judgment_text, card.holding]);
 
+  const activePdfUrl = useMemo(
+    () => resolvePdfUrl(card.pdf_url || details?.pdf_url, card.judgment_id || card.case_id),
+    [card.pdf_url, details?.pdf_url, card.judgment_id, card.case_id],
+  );
+
+  const holdingText =
+    card.holding ||
+    card.ratio_decidendi ||
+    details?.holding ||
+    details?.ratio_decidendi ||
+    "";
+
+  const issueText =
+    card.issue ||
+    details?.legal_issue ||
+    details?.issue ||
+    "";
+
+  const effectiveStatutes =
+    card.statutes_invoked && card.statutes_invoked.length > 0
+      ? card.statutes_invoked
+      : (details?.statutes_invoked || []);
+
   useEffect(() => {
     if (open) {
       setActiveTab("ratio");
@@ -165,29 +188,6 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, idToFetch]);
-
-  const holdingText =
-    card.holding ||
-    card.ratio_decidendi ||
-    details?.holding ||
-    details?.ratio_decidendi ||
-    "";
-
-  const issueText =
-    card.issue ||
-    details?.legal_issue ||
-    details?.issue ||
-    "";
-
-  const effectiveStatutes =
-    card.statutes_invoked && card.statutes_invoked.length > 0
-      ? card.statutes_invoked
-      : (details?.statutes_invoked || []);
-
-  const activePdfUrl = useMemo(
-    () => resolvePdfUrl(card.pdf_url || details?.pdf_url, card.judgment_id || card.case_id),
-    [card.pdf_url, details?.pdf_url, card.judgment_id, card.case_id],
-  );
 
   const orderText = fullText;
 
