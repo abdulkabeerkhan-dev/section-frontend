@@ -74,6 +74,7 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
 };
 
 function withinRange(updatedAt: string, range: DateRange, customDate: Date | null): boolean {
+  if (!updatedAt) return true;
   const ts = new Date(updatedAt).getTime();
   if (Number.isNaN(ts)) return true;
   if (customDate) {
@@ -134,16 +135,17 @@ export function Sidebar({
   const [search, setSearch] = useState("");
 
   const visibleThreads = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = (search || "").trim().toLowerCase();
     const filtered = threads.filter(
       (t) =>
+        t &&
         withinRange(t.updatedAt, dateRange, customDate) &&
-        (q === "" || t.title.toLowerCase().includes(q)),
+        (q === "" || (t.title || "").toLowerCase().includes(q)),
     );
     filtered.sort((a, b) =>
       sortOrder === "newest"
-        ? b.updatedAt.localeCompare(a.updatedAt)
-        : a.updatedAt.localeCompare(b.updatedAt),
+        ? (b.updatedAt || "").localeCompare(a.updatedAt || "")
+        : (a.updatedAt || "").localeCompare(b.updatedAt || ""),
     );
     return filtered;
   }, [threads, sortOrder, dateRange, customDate, search]);
@@ -396,7 +398,14 @@ export function Sidebar({
                                 "mt-0.5 block text-[11px] text-sidebar-foreground/60",
                               )}
                             >
-                              {item.mode === "draft" ? "Draft" : "Research"} · {format(new Date(item.updatedAt), "MMM d")}
+                              {item.mode === "draft" ? "Draft" : "Research"} · {(() => {
+                                try {
+                                  const d = new Date(item.updatedAt);
+                                  return Number.isNaN(d.getTime()) ? "Recent" : format(d, "MMM d");
+                                } catch {
+                                  return "Recent";
+                                }
+                              })()}
                             </span>
                           </span>
                         </button>

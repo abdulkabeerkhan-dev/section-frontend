@@ -258,35 +258,37 @@ export function QueryWorkspace() {
   const threads = useMemo(() => {
     const map = new Map<string, ActivityRecord[]>();
     for (const r of records ?? []) {
+      if (!r || !r.thread_id) continue;
       const arr = map.get(r.thread_id) ?? [];
       arr.push(r);
       map.set(r.thread_id, arr);
     }
     const list: SidebarThread[] = [];
     for (const [id, rows] of map) {
-      const sorted = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      if (!rows || rows.length === 0) continue;
+      const sorted = [...rows].sort((a, b) => (a?.created_at || "").localeCompare(b?.created_at || ""));
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
       list.push({
         id,
-        title: first.question,
-        mode: last.mode === "draft" ? "draft" : "research",
-        updatedAt: last.created_at,
+        title: first?.question || "Untitled matter",
+        mode: last?.mode === "draft" ? "draft" : "research",
+        updatedAt: last?.created_at || new Date().toISOString(),
       });
     }
-    list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    list.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
     return list;
   }, [records]);
 
   const activeTurns = useMemo(() => {
     if (!activeThreadId) return [];
     const rows = (records ?? [])
-      .filter((r) => r.thread_id === activeThreadId)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      .filter((r) => r && r.thread_id === activeThreadId)
+      .sort((a, b) => (a?.created_at || "").localeCompare(b?.created_at || ""));
     const persisted = rows.map(recordToTurn);
     // append any optimistic turns not yet present in the records
-    const knownQuestions = new Set(persisted.map((t) => t.question.trim()));
-    const extra = draftTurns.filter((t) => !knownQuestions.has(t.question.trim()));
+    const knownQuestions = new Set(persisted.map((t) => (t.question || "").trim()));
+    const extra = draftTurns.filter((t) => !knownQuestions.has((t.question || "").trim()));
     return [...persisted, ...extra];
   }, [records, activeThreadId, draftTurns]);
 

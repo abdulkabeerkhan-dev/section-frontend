@@ -67,10 +67,12 @@ export function useMe() {
         // non-blocking
       }
 
-      let raw: Record<string, unknown>;
+      let raw: Record<string, unknown> = {};
       try {
         const syncedUser = await syncUser({ data: { email, fullName } });
-        raw = syncedUser as unknown as Record<string, unknown>;
+        if (syncedUser && typeof syncedUser === "object") {
+          raw = syncedUser as unknown as Record<string, unknown>;
+        }
       } catch (networkErr) {
         console.warn("[useMe] user sync failed, falling back to Clerk session", {
           elapsedMs: Date.now() - startedAt,
@@ -94,37 +96,40 @@ export function useMe() {
       // Backend may return either the user fields at the top level or wrapped
       // as { status, user: {...} }. Normalize to the inner object.
       const dbUser: Record<string, unknown> =
-        raw.user && typeof raw.user === "object"
+        raw && typeof raw === "object" && raw.user && typeof raw.user === "object"
           ? (raw.user as Record<string, unknown>)
-          : raw;
+          : (raw && typeof raw === "object" ? raw : {});
 
       const resolvedFullName =
-        (dbUser.full_name as string) ?? (dbUser.fullName as string) ?? fullName ?? "";
+        (typeof dbUser.full_name === "string" ? dbUser.full_name : null) ??
+        (typeof dbUser.fullName === "string" ? dbUser.fullName : null) ??
+        fullName ??
+        "Advocate";
       const firstName =
-        (dbUser.first_name as string) ??
-        (dbUser.firstName as string) ??
+        (typeof dbUser.first_name === "string" ? dbUser.first_name : null) ??
+        (typeof dbUser.firstName === "string" ? dbUser.firstName : null) ??
         user?.firstName ??
         resolvedFullName.split(" ")[0] ??
-        "";
+        "Advocate";
       const lastName =
-        (dbUser.last_name as string) ??
-        (dbUser.lastName as string) ??
+        (typeof dbUser.last_name === "string" ? dbUser.last_name : null) ??
+        (typeof dbUser.lastName === "string" ? dbUser.lastName : null) ??
         user?.lastName ??
         resolvedFullName.split(" ").slice(1).join(" ") ??
         "";
 
       return {
-        id: (dbUser.id as string) ?? user?.id ?? "",
+        id: (typeof dbUser.id === "string" ? dbUser.id : null) ?? user?.id ?? "",
         fullName: resolvedFullName,
         firstName,
         lastName,
-        email: (dbUser.email as string) ?? email,
-        status: (dbUser.status as string) ?? "active",
+        email: (typeof dbUser.email === "string" ? dbUser.email : null) ?? email,
+        status: (typeof dbUser.status === "string" ? dbUser.status : null) ?? "active",
         isAdmin:
           Boolean(dbUser.is_admin) ||
           Boolean(dbUser.isAdmin) ||
           (dbUser.role as string) === "admin",
-        needsName: firstName.trim().length === 0,
+        needsName: typeof firstName === "string" && firstName.trim().length === 0,
       };
     },
   });

@@ -37,6 +37,15 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "An unexpected error occurred.";
+
+  const errorStack = error instanceof Error ? error.stack : null;
+
   return (
     <TooltipProvider>
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -45,8 +54,23 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
             This page didn't load
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Something went wrong on our end. You can try refreshing or head back home.
+            Something went wrong on our end. You can try refreshing or head back to the workspace.
           </p>
+          {errorMessage && (
+            <div className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-left">
+              <p className="text-xs font-mono text-destructive break-all">{errorMessage}</p>
+              {errorStack && (
+                <details className="mt-2 text-[11px] text-muted-foreground">
+                  <summary className="cursor-pointer font-medium hover:text-foreground">
+                    Technical details
+                  </summary>
+                  <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[10px]">
+                    {errorStack}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button
               onClick={() => {
@@ -57,11 +81,23 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
               Try again
             </button>
             <a
-              href="/"
+              href="/app"
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-[13px] font-medium tracking-[0.01em] text-foreground transition-colors hover:bg-accent"
             >
-              Go home
+              Go to workspace
             </a>
+            <button
+              onClick={() => {
+                try {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                } catch {}
+                window.location.href = "/auth";
+              }}
+              className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Reset session
+            </button>
           </div>
         </div>
       </div>
