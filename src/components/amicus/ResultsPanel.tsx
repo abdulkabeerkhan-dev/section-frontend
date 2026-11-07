@@ -103,6 +103,7 @@ export function ResultsPanel({
               precedentStatusWarning={data.precedent_status_warning}
               supersedingCitation={data.superseding_citation}
               supersedingCaseName={data.superseding_case_name}
+              isVerified={data.is_verified}
               onCitationClick={onCitationClick}
             />
           )}

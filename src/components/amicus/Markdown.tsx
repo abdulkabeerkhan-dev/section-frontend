@@ -312,12 +312,33 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             </strong>
           ),
           em: ({ node, children, ...props }) => <em {...props}>{wrap(children)}</em>,
-          code: ({ node, ...props }) => (
-            <code
-              className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[13px] text-foreground"
-              {...props}
-            />
-          ),
+          code: ({ node, children, ...props }) => {
+            const raw = textContent(children);
+            if (raw.includes("✓ Verified") || raw.includes("Verified")) {
+              return (
+                <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-xs font-semibold text-emerald-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {children}
+                </span>
+              );
+            }
+            if (raw.includes("⚠️ Unverified") || raw.includes("Unverified")) {
+              return (
+                <span className="inline-flex items-center gap-1 rounded-sm border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  {children}
+                </span>
+              );
+            }
+            return (
+              <code
+                className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[13px] text-foreground"
+                {...props}
+              >
+                {children}
+              </code>
+            );
+          },
           hr: ({ node, ...props }) => (
             <hr className="my-7 border-0 border-t border-border/70" {...props} />
           ),

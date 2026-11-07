@@ -25,6 +25,7 @@ interface AnalysisViewProps {
   precedentStatusWarning?: string;
   supersedingCitation?: string;
   supersedingCaseName?: string;
+  isVerified?: boolean;
   onCitationClick?: (citation: string) => void;
 }
 
@@ -146,8 +147,10 @@ export function AnalysisView({
   precedentStatusWarning,
   supersedingCitation,
   supersedingCaseName,
+  isVerified,
   onCitationClick,
 }: AnalysisViewProps) {
+  const isPartialResult = isVerified === false || Boolean(text && (text.includes("PARTIAL RESULT") || text.includes("UNVERIFIED NOTICE")));
   if (intake) {
     const body = text?.trim() ?? "";
     return (
@@ -183,15 +186,19 @@ export function AnalysisView({
           {hasBody && (
             <div className="flex flex-wrap items-center gap-2">
               <CopyButton text={answer} />
-              <ExportPleadingButton text={answer} jobId={jobId} />
-              {!isDrafting && (
-                <Link
-                  to="/assistants/mike"
-                  className="inline-flex items-center gap-1.5 rounded-sm border border-authority/40 bg-authority/10 px-3 py-1.5 text-xs font-semibold text-authority transition-colors hover:bg-authority/20"
-                >
-                  <PenLine className="h-3.5 w-3.5" />
-                  Hand Off to Counsel
-                </Link>
+              {!isPartialResult && (
+                <>
+                  <ExportPleadingButton text={answer} jobId={jobId} />
+                  {!isDrafting && (
+                    <Link
+                      to="/assistants/mike"
+                      className="inline-flex items-center gap-1.5 rounded-sm border border-authority/40 bg-authority/10 px-3 py-1.5 text-xs font-semibold text-authority transition-colors hover:bg-authority/20"
+                    >
+                      <PenLine className="h-3.5 w-3.5" />
+                      Hand Off to Counsel
+                    </Link>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -237,7 +244,7 @@ export function AnalysisView({
             No analysis was returned for this matter.
           </p>
         )}
-        {hasBody && !isDrafting && (
+        {hasBody && !isDrafting && !isPartialResult && (
           <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-sm border border-border bg-muted/30 p-5 sm:flex-row sm:items-center">
             <div>
               <p className="font-serif text-base font-semibold text-foreground">Pleading & Notice Drafting</p>
@@ -250,6 +257,12 @@ export function AnalysisView({
               <PenLine className="h-4 w-4" />
               Hand Off to Counsel for Drafting
             </Link>
+          </div>
+        )}
+        {hasBody && !isDrafting && isPartialResult && (
+          <div className="mt-8 flex items-center gap-3 rounded-sm border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-800">
+            <span className="font-semibold uppercase tracking-wider text-amber-900">Export & Drafting Locked</span>
+            <span>Handoff to Counsel and Pleading Export are locked because this research output contains partial or unverified statutory claims.</span>
           </div>
         )}
         {footer && <div className="mt-6">{footer}</div>}

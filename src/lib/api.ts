@@ -122,6 +122,8 @@ export interface GenerateResponse {
   precedent_status_warning?: string;
   superseding_citation?: string;
   superseding_case_name?: string;
+  /** Layer 7 Verification status */
+  is_verified?: boolean;
 }
 
 
@@ -861,6 +863,10 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     precedent_status_warning: asString(rec.precedent_status_warning) ?? undefined,
     superseding_citation: asString(rec.superseding_citation) ?? undefined,
     superseding_case_name: asString(rec.superseding_case_name) ?? undefined,
+    is_verified:
+      rec.is_verified === true ||
+      p.is_verified === true ||
+      Boolean(typeof p.answer === 'string' && p.answer.includes('✓ VERIFIED RESEARCH MEMORANDUM')),
   };
 }
 
