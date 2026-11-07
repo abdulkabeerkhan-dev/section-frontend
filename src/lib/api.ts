@@ -232,7 +232,7 @@ function eraPayload(era: JurisprudenceEra | undefined): Record<string, unknown> 
 // Strictly use the live backend URL. No local simulation fallback.
 const BASE_URL =
   (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
-  "https://lawyer-backend-production-3b52.up.railway.app";
+  "https://lawyer-backend-9e7q.onrender.com";
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
 
 function base(): string | undefined {

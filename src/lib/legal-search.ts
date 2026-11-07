@@ -2,7 +2,7 @@ import { backendFetch } from "./backend";
 
 export const BACKEND_BASE = (
   (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
-  "https://lawyer-backend-production-3b52.up.railway.app"
+  "https://lawyer-backend-9e7q.onrender.com"
 ).replace(/\/$/, "");
 
 export const JOURNALS = ["SCMR", "PLD", "YLR", "CLC", "PCrLJ", "MLD", "CLD", "PTD", "PLC"];
