@@ -150,7 +150,15 @@ export function AnalysisView({
   isVerified,
   onCitationClick,
 }: AnalysisViewProps) {
-  const isPartialResult = isVerified === false || Boolean(text && (text.includes("PARTIAL RESULT") || text.includes("UNVERIFIED NOTICE")));
+  const isPartialResult = isVerified === false || Boolean(
+    text && (
+      text.includes("PARTIAL RESULT") ||
+      text.includes("PARTIAL LEGAL RESEARCH RECORD") ||
+      text.includes("UNVERIFIED NOTICE") ||
+      text.includes("Verification Notice") ||
+      text.includes("⚠️")
+    )
+  );
   if (intake) {
     const body = text?.trim() ?? "";
     return (
@@ -186,7 +194,15 @@ export function AnalysisView({
           {hasBody && (
             <div className="flex flex-wrap items-center gap-2">
               <CopyButton text={answer} />
-              {!isPartialResult && (
+              {isPartialResult ? (
+                <span
+                  title="Export is gated on partial or unverified research records. Deterministic verification of all primary records is required to unlock export."
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-500 cursor-not-allowed"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  Export Gated (Partial Record)
+                </span>
+              ) : (
                 <>
                   <ExportPleadingButton text={answer} jobId={jobId} />
                   {!isDrafting && (

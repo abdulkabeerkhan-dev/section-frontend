@@ -17,8 +17,22 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const isPartialRecord = Boolean(
+    text && (
+      text.includes("PARTIAL RESULT") ||
+      text.includes("PARTIAL LEGAL RESEARCH RECORD") ||
+      text.includes("UNVERIFIED NOTICE") ||
+      text.includes("Verification Notice") ||
+      text.includes("⚠️")
+    )
+  );
+
   async function handleDownload(format: "docx" | "pdf") {
     if (!text.trim()) return;
+    if (isPartialRecord) {
+      toast.error("Export is gated on partial or unverified research records. Verify all primary records to unlock export.");
+      return;
+    }
     setMenuOpen(false);
     setDownloading(format);
     try {
@@ -46,6 +60,21 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/95 px-5 py-3 backdrop-blur">
         <div className="flex items-center gap-2.5">
           {text.trim() && (
+            isPartialRecord ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  title="Export is gated on partial or unverified research records. Verify all primary records to unlock export."
+                  className="cursor-not-allowed rounded bg-muted px-3.5 py-1.5 text-[13px] font-semibold text-muted-foreground border border-border opacity-70"
+                >
+                  Download .docx (Gated)
+                </button>
+                <span className="hidden sm:inline-block rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-500 border border-amber-500/20">
+                  Export Gated (Partial Record)
+                </span>
+              </div>
+            ) : (
             <div className="relative flex items-stretch">
               <button
                 type="button"
@@ -90,6 +119,7 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
                 </div>
               )}
             </div>
+            )
           )}
           <button
             type="button"
