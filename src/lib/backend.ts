@@ -2,7 +2,12 @@
 // session token so the backend can authenticate the user with its admin keys.
 // Auth is fully owned by Clerk on the frontend; the backend owns all data.
 
-const BASE = (import.meta.env.VITE_BACKEND_URL as string | undefined)?.replace(/\/$/, "");
+const BASE = (
+  (typeof process !== "undefined" && (process.env?.["VITE_BACKEND_URL"] || process.env?.["VITE_API_BASE_URL"])) ||
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "https://lawyer-backend-9e7q.onrender.com"
+).replace(/\/$/, "");
 
 async function clerkToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;

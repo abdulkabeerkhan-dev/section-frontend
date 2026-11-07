@@ -50,7 +50,7 @@ export function useMe() {
     // Cold starts on the backend can take a few seconds — retry transient
     // failures (network errors, 5xx, 408, 429) with exponential backoff.
     // Auth/permission failures (4xx) fail immediately.
-    retry: (failureCount, error) => failureCount < 3 && isTransient(error),
+    retry: (failureCount, error) => failureCount < 5 && isTransient(error),
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000),
     queryFn: async (): Promise<MeResult> => {
       const email = user?.primaryEmailAddress?.emailAddress ?? "";

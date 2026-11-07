@@ -35,8 +35,11 @@ export const syncCurrentUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const backendUrl = (
       process.env["VITE_BACKEND_URL"] ||
-      import.meta.env.VITE_BACKEND_URL ||
-      "https://lawyer-backend-production-3b52.up.railway.app"
+      process.env["VITE_API_BASE_URL"] ||
+      (typeof import.meta !== "undefined" && import.meta.env
+        ? (import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL)
+        : "") ||
+      "https://lawyer-backend-9e7q.onrender.com"
     ).replace(/\/$/, "");
 
     const authorization = getRequest().headers.get("authorization");
