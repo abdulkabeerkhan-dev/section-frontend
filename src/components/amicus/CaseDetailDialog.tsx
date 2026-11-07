@@ -3,7 +3,7 @@ import { Gavel, FileText } from "lucide-react";
 import { resolvePdfUrl, type CaseResult } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { cleanCaseTitle } from "@/lib/case-title";
-import { StructuredDetails } from "./CaseSections";
+import { StructuredDetails } from "./StructuredDetails";
 
 import {
   Dialog,
