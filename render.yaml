@@ -13,9 +13,9 @@ services:
       - key: NITRO_PRESET
         value: node-server
       - key: VITE_BACKEND_URL
-        sync: false
+        value: https://lawyer-backend-9e7q.onrender.com
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://lawyer-backend-9e7q.onrender.com
       - key: VITE_API_KEY
         value: amicus-dev-2024
       - key: VITE_CLERK_PUBLISHABLE_KEY
@@ -28,3 +28,7 @@ services:
         value: sb_publishable_Fx60n2qkyChTyePGCSAxKg_52oa7e0h
       - key: VITE_SUPABASE_PROJECT_ID
         value: ogbuynedouxbvdhrheyq
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        value: pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ
+      - key: VITE_CLERK_PUBLISHABLE_KEY_LIVE
+        value: pk_live_Y2xlcmsuc2VjdGlvbi1haS5sb3ZhYmxlLmFwcCQ
