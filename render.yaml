@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: section-frontend
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: node .output/server/index.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NITRO_PRESET
+        value: node-server
+      - key: VITE_BACKEND_URL
+        sync: false
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_API_KEY
+        value: amicus-dev-2024
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        value: pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ
+      - key: VITE_CLERK_SIGN_UP_URL
+        value: /accept-invitation
+      - key: VITE_SUPABASE_URL
+        value: https://ogbuynedouxbvdhrheyq.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_Fx60n2qkyChTyePGCSAxKg_52oa7e0h
+      - key: VITE_SUPABASE_PROJECT_ID
+        value: ogbuynedouxbvdhrheyq
