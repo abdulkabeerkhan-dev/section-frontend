@@ -2,3 +2,4 @@
 - [x] Research dashboard: per-query authorities, filters, saved searches, year timeline + overruled chain.
 - [ ] Era filter live comparison — user to run in preview (they chose to test it themselves).
 - [x] Align legal response viewer with status polling, GFM memorandum, and backend precedent/PDF fields (browser contract checks passed; signed-in live query remains unverified).
+- [ ] **Full Judgment Text Ingestion & High-Fidelity OCR Pipeline**: Scale beyond the 141,481 full judgments in Turso to 100% full-text coverage of all Pakistani law reporters (PLD, SCMR, CLC, MLD, PCrLJ, PTD, PLC) with automated PDF parsing, OCR verification, 4-word shingle overlap checks, and strict badge validation gating.

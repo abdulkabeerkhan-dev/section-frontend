@@ -148,7 +148,7 @@ function CaseSectionCard({
                 {court}
               </span>
             )}
-            {data?.verified && (
+            {data?.verified && !data?.verification_status?.includes("HEADNOTE_ONLY") && (
               <span className="inline-flex items-center gap-1 rounded border border-gold/40 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
                 Verified source
               </span>

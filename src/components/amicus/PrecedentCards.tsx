@@ -94,7 +94,7 @@ export function PrecedentCardItem({
           </a>
         )}
         <SavePrecedentControl card={card} />
-        {card.verified_source && (
+        {card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified" && (
           <button
             type="button"
             onClick={() => {

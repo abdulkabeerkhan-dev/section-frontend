@@ -268,17 +268,19 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium",
-                  card.verified_source
+                  card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified"
                     ? "border-gold/40 bg-gold/10 text-gold"
                     : "border-border bg-muted text-muted-foreground",
                 )}
               >
-                {card.verified_source ? (
+                {card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified" ? (
                   <ShieldCheck className="h-3 w-3" aria-hidden />
                 ) : (
                   <BookOpen className="h-3 w-3" aria-hidden />
                 )}
-                {card.verified_source ? "Verified Source" : "General Reference"}
+                {card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified"
+                  ? "Verified Source"
+                  : (card.verification_status?.includes("HEADNOTE_ONLY") ? "Headnote Only (Not Verified)" : "General Reference")}
               </span>
               {activePdfUrl && (
                 <a
