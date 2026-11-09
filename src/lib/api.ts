@@ -609,6 +609,16 @@ export async function generate(
     }
 
     if (!pollRes.ok) {
+      if (pollRes.status === 401) {
+        try {
+          const fresh = await (window as unknown as { Clerk?: { session?: { getToken: (opts?: { skipCache?: boolean }) => Promise<string | null> } } })
+            .Clerk?.session?.getToken({ skipCache: true });
+          if (fresh) {
+            token = fresh;
+            continue;
+          }
+        } catch { /* ignore */ }
+      }
       let parsed: unknown = null;
       try { parsed = await pollRes.json(); } catch { /* ignore */ }
       handleErrorBody(parsed, pollRes.status);
