@@ -12,8 +12,8 @@ RUN npm ci --prefer-offline || npm install
 COPY . .
 
 # Build arguments for Vite client bundle
-ARG VITE_BACKEND_URL=https://lawyer-backend-production-19db.up.railway.app
-ARG VITE_API_BASE_URL=https://lawyer-backend-production-19db.up.railway.app
+ARG VITE_BACKEND_URL=https://lawyer-backend-production-5c6d.up.railway.app
+ARG VITE_API_BASE_URL=https://lawyer-backend-production-5c6d.up.railway.app
 ARG VITE_API_KEY=amicus-dev-2024
 ARG VITE_CLERK_PUBLISHABLE_KEY=pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ
 ARG VITE_CLERK_SIGN_UP_URL=/accept-invitation
