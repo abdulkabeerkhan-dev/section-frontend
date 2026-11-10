@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import type { BackendMode, GenerateResponse, Mode, PrecedentCard } from "@/lib/api";
 import { DocumentView } from "./DocumentView";
 import { AnalysisView } from "./AnalysisView";
+import { JudgmentReaderDrawer } from "./JudgmentReaderDrawer";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, ExternalLink, FileText, Scale, ShieldCheck, Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -81,6 +82,8 @@ export function ResultsPanel({
   const [copiedCite, setCopiedCite] = useState<string | null>(null);
   const [selectedCitation, setSelectedCitation] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedCardForReader, setSelectedCardForReader] = useState<PrecedentCard | null>(null);
+  const [readerOpen, setReaderOpen] = useState(false);
 
   // Unified authorities for cases
   const cases = useMemo(() => {
@@ -149,7 +152,14 @@ export function ResultsPanel({
 
   const totalCited = precedentCards.length + statutes.length;
   const verifiedStatutes = statutes.filter((s) => s.verified).length;
-  const verifiedCases = precedentCards.filter((c) => c.verified !== false).length;
+  const verifiedCases = precedentCards.filter(
+    (c) =>
+      c.verified !== false &&
+      c.is_verified !== false &&
+      c.verification_status !== "HEADNOTE_ONLY - not verified" &&
+      !c.is_headnote_only &&
+      c.verified_source !== false,
+  ).length;
   const totalVerified = verifiedStatutes + verifiedCases;
 
   function handleSelectAuthority(cit: string) {
@@ -334,6 +344,12 @@ export function ResultsPanel({
                 const snippet = card.holding || card.summary || card.snippet || "";
                 const caseId = `auth-card-${cit.replace(/[^a-zA-Z0-9]/g, "_")}`;
                 const isSelected = selectedCitation && cit.toLowerCase().includes(selectedCitation.toLowerCase());
+                const isCaseVerified =
+                  card.verified !== false &&
+                  card.is_verified !== false &&
+                  card.verification_status !== "HEADNOTE_ONLY - not verified" &&
+                  !card.is_headnote_only &&
+                  card.verified_source !== false;
 
                 return (
                   <article
@@ -349,9 +365,15 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         CASE
                       </span>
-                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-                        ✓ Verified
-                      </span>
+                      {isCaseVerified ? (
+                        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+                          ✓ Verified
+                        </span>
+                      ) : (
+                        <span className="rounded-[3px] border border-[#E3C578] bg-[#FDF8EA] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[#8C6D1F]">
+                          Unverified
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="mt-1.5 font-serif text-[15px] font-bold leading-snug text-[var(--text)]">
@@ -371,6 +393,12 @@ export function ResultsPanel({
                       </div>
                     )}
 
+                    {!isCaseVerified && (
+                      <div className="mt-2 rounded-[2px] border border-[#E3C578] bg-[#FDF8EA] p-2 font-sans text-[11px] leading-relaxed text-[#8C6D1F]">
+                        Not matched to a reported full judgment in the database. Check the report before citing.
+                      </div>
+                    )}
+
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line)] pt-2 font-sans text-[11px]">
                       <div className="flex items-center gap-3">
                         <button
@@ -382,7 +410,10 @@ export function ResultsPanel({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onCitationClick?.(cit)}
+                          onClick={() => {
+                            setSelectedCardForReader(card);
+                            setReaderOpen(true);
+                          }}
                           className="font-medium text-[var(--text-muted)] hover:text-[var(--ink)]"
                         >
                           Open record
@@ -492,6 +523,14 @@ export function ResultsPanel({
           {renderAuthoritiesContent()}
         </aside>
       </div>
+
+      {selectedCardForReader && (
+        <JudgmentReaderDrawer
+          card={selectedCardForReader}
+          open={readerOpen}
+          onOpenChange={setReaderOpen}
+        />
+      )}
     </div>
   );
 }

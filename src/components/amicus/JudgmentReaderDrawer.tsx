@@ -99,8 +99,8 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
 
   // Strictly bind to a stable identifier — never the title string.
   const idToFetch = useMemo(
-    () => card.judgment_id || card.case_id || "",
-    [card.judgment_id, card.case_id],
+    () => card.judgment_id || card.case_id || card.citation || "",
+    [card.judgment_id, card.case_id, card.citation],
   );
 
   const fallbackText = useMemo(() => {
@@ -108,8 +108,8 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
   }, [card.raw_judgment_text, card.holding]);
 
   const activePdfUrl = useMemo(
-    () => resolvePdfUrl(card.pdf_url || details?.pdf_url, card.judgment_id || card.case_id),
-    [card.pdf_url, details?.pdf_url, card.judgment_id, card.case_id],
+    () => resolvePdfUrl(card.pdf_url || details?.pdf_url, card.judgment_id || card.case_id || card.citation),
+    [card.pdf_url, details?.pdf_url, card.judgment_id, card.case_id, card.citation],
   );
 
   const holdingText =

@@ -779,7 +779,6 @@ export function QueryWorkspace() {
                               mode={turn.mode}
                               fileName={fileNameFor(turn.mode, turn.question, turn.docType)}
                               attachmentName={null}
-                              onCitationClick={(citation) => void send(citation, [])}
                               answerFooter={
                                 response.truncated && jobId ? (
                                   <ContinueAnswerControl
