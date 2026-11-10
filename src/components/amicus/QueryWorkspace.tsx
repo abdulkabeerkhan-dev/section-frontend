@@ -520,65 +520,184 @@ export function QueryWorkspace() {
         </header>
 
         {showHero ? (
-          <div ref={scrollRef} className="flex-1 overflow-y-auto">
-            <div className="relative min-h-full">
-              <HeroVideo />
-              <div className="relative z-10 mx-auto flex min-h-full w-full max-w-4xl flex-col justify-start px-6 pt-12 pb-12 sm:px-10 sm:pt-[12vh]">
-                <div className="hero-rise border-b border-border pb-8 text-left">
-                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-authority">Legal intelligence workspace</p>
-                  <h1 className="font-serif text-4xl font-normal leading-tight text-foreground sm:text-5xl">
-                    {timeGreeting(greetingName)}
-                  </h1>
-                  <p className="mt-3 max-w-2xl text-[16px] font-normal leading-7 text-muted-foreground">
-                    {greetingName
-                      ? "Research case law or start a draft."
-                      : "Describe your matter to find cited case law or draft a court-ready document."}
-                  </p>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto bg-[var(--page)]">
+            <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-start px-6 pt-10 pb-16 sm:px-10">
+              {/* Date label in section-label style */}
+              <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                {format(new Date(), "EEEE, d MMMM yyyy").toUpperCase()}
+              </p>
+
+              {/* Greeting in Source Serif 44px + 3px x 64px --ink rule */}
+              <h1 className="mt-2 font-serif text-[44px] font-bold leading-tight text-[var(--ink)]">
+                {timeGreeting(greetingName)}
+              </h1>
+              <div className="my-3 h-[3px] w-[64px] rounded-[1px] bg-[var(--ink)]" />
+              <p className="font-sans text-[15px] leading-relaxed text-[var(--text-muted)]">
+                Research Pakistani case law, verify statutes, or draft court-ready pleadings across superior jurisdictions.
+              </p>
+
+              {/* Ask Box */}
+              <div className="mt-8">
+                <Composer
+                  onSend={send}
+                  loading={false}
+                  error={error}
+                  autoFocus
+                  seed={seed}
+                  modeChoice={modeChoice}
+                  onModeChoiceChange={setModeChoice}
+                  era={era}
+                  onEraChange={setEra}
+                />
+              </div>
+
+              {/* Start here section: 3 cards (STATUTE / CASE LAW / REMEDIES) */}
+              <section className="mt-10">
+                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)] mb-3">
+                  START HERE
+                </p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <article
+                    onClick={() => seedComposer("What is the limitation period to file an appeal against a Banking Court decree under Section 22 of the Financial Institutions Ordinance, 2001?")}
+                    className="cursor-pointer rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)] transition-all hover:border-[var(--line-strong)]"
+                  >
+                    <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      STATUTE
+                    </span>
+                    <h2 className="mt-2 font-serif text-[16px] font-bold leading-snug text-[var(--text)]">
+                      Appeal from a Banking Court: procedure and limitation
+                    </h2>
+                    <p className="mt-2 font-sans text-[12px] text-[var(--text-muted)]">
+                      Examines Section 22 FIO, Section 5 Limitation Act exclusion, and leave to defend appealability.
+                    </p>
+                  </article>
+
+                  <article
+                    onClick={() => seedComposer("What are the mandatory legal ingredients to constitute an offence under Section 489-F PPC for dishonoured cheques?")}
+                    className="cursor-pointer rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)] transition-all hover:border-[var(--line-strong)]"
+                  >
+                    <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      CASE LAW
+                    </span>
+                    <h2 className="mt-2 font-serif text-[16px] font-bold leading-snug text-[var(--text)]">
+                      Dishonour of cheque under Section 489-F PPC
+                    </h2>
+                    <p className="mt-2 font-sans text-[12px] text-[var(--text-muted)]">
+                      Supreme Court benchmarks on dishonest issuance, repayment of loan vs security cheques.
+                    </p>
+                  </article>
+
+                  <article
+                    onClick={() => seedComposer("Under what legal grounds can an accused obtain pre-arrest bail under Section 498 CrPC in offences not falling under the prohibitory clause?")}
+                    className="cursor-pointer rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)] transition-all hover:border-[var(--line-strong)]"
+                  >
+                    <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      REMEDIES
+                    </span>
+                    <h2 className="mt-2 font-serif text-[16px] font-bold leading-snug text-[var(--text)]">
+                      Pre-arrest bail standards under Section 498 CrPC
+                    </h2>
+                    <p className="mt-2 font-sans text-[12px] text-[var(--text-muted)]">
+                      Establishing mala fides, ulterior motives, and rule of bail in non-prohibitory matters.
+                    </p>
+                  </article>
                 </div>
-                <div className="hero-rise mt-8" style={{ animationDelay: "0.08s" }}>
-                  <Composer
-                    onSend={send}
-                    loading={false}
-                    error={error}
-                    autoFocus
-                    seed={seed}
-                    modeChoice={modeChoice}
-                    onModeChoiceChange={setModeChoice}
-                    era={era}
-                    onEraChange={setEra}
-                  />
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
-                    <span>Review all generated work before filing or relying on it.</span>
-                  </div>
-                  {threads.length > 0 && (
-                    <section className="mt-8">
-                      <h2 className="text-[13px] font-medium text-foreground">Continue where you left off</h2>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                        {[...threads].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3).map((t) => (
-                          <button key={t.id} type="button" onClick={() => sidebarProps.onSelect(t.id)} className="rounded-sm border border-border bg-card p-3 text-left transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                            <span className="block truncate text-[13px] text-foreground">{t.title}</span>
-                            <span className="mt-1 block text-[12px] text-muted-foreground">{new Date(t.updatedAt).toLocaleDateString()}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                  <section className="mt-8">
-                    <h2 className="text-[13px] font-medium text-foreground">Try asking</h2>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {TRY_ASKING.map((q) => (
-                        <button key={q} type="button" onClick={() => seedComposer(q)} className="rounded-sm border border-border bg-card px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                          {q}
+
+                {/* Pill shortcuts */}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    SHORTCUTS:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => seedComposer("Draft a statutory legal notice under Section 80 CPC for damages against an executive department.")}
+                    className="rounded-[3px] border border-[var(--chip-border)] bg-[var(--chip-bg)] px-3 py-1.5 font-sans text-[12px] font-medium text-[var(--chip-text)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                  >
+                    Draft a legal notice
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seedComposer("Summarize the landmark ratio in 2024 SCMR 1 regarding scope of judicial review.")}
+                    className="rounded-[3px] border border-[var(--chip-border)] bg-[var(--chip-bg)] px-3 py-1.5 font-sans text-[12px] font-medium text-[var(--chip-text)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                  >
+                    Summarize a judgment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seedComposer("Check limitation period to file a suit for specific performance under Article 113 of the Limitation Act, 1908.")}
+                    className="rounded-[3px] border border-[var(--chip-border)] bg-[var(--chip-bg)] px-3 py-1.5 font-sans text-[12px] font-medium text-[var(--chip-text)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                  >
+                    Check a limitation period
+                  </button>
+                </div>
+              </section>
+
+              {/* Two cards: Recent matters and Upcoming deadlines */}
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)]">
+                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    RECENT MATTERS
+                  </p>
+                  {threads.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {[...threads].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3).map((t, i) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => sidebarProps.onSelect(t.id)}
+                          className="flex w-full items-center justify-between rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-left hover:border-[var(--line-strong)]"
+                        >
+                          <span className="truncate font-sans text-[13px] text-[var(--text)]">{t.title}</span>
+                          <span className="ml-2 shrink-0 font-sans text-[11px] text-[var(--text-muted)]">Matter {threads.length - i}</span>
                         </button>
                       ))}
                     </div>
-                  </section>
+                  ) : (
+                    <p className="mt-3 font-sans text-[13px] leading-relaxed text-[var(--text-muted)]">
+                      No recent matters recorded yet. Begin by asking a legal question or drafting a pleading above.
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)]">
+                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    UPCOMING DEADLINES
+                  </p>
+                  <p className="mt-3 font-sans text-[13px] leading-relaxed text-[var(--text-muted)]">
+                    No deadlines tracked. Statutory limitation periods, hearing notices, and filing deadlines will appear here.
+                  </p>
                 </div>
               </div>
+
+              {/* Quiet Footer */}
+              <div className="mt-12 border-t border-[var(--line)] pt-6 text-center">
+                <p className="font-sans text-[12px] text-[var(--text-muted)]">
+                  Review all generated work before filing or relying on it.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
+          </div>) : (
           <>
+            {/* Top bar on result pages: breadcrumb (Matters / matter name / page), a status pill, and actions */}
+            <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--surface-2)] px-6 py-3 shadow-xs">
+              <div className="flex items-center gap-2 font-sans text-[12px]">
+                <span className="text-[var(--text-muted)]">Matters</span>
+                <span className="text-[var(--text-muted)]">/</span>
+                <span className="font-medium text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
+                  {activeTurn?.question || (threads.find((t) => t.id === activeId)?.title) || "Active Matter"}
+                </span>
+                <span className="text-[var(--text-muted)]">/</span>
+                <span className="font-semibold text-[var(--ink)]">
+                  {assistant === "mike" || activeTurns[activeTurns.length - 1]?.mode === "draft" ? "Draft" : "Research"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
+                  ✓ Verified Record
+                </span>
+              </div>
+            </header>
             <Conversation className="flex-1">
               <ConversationContent className="mx-auto w-full max-w-4xl gap-10 px-4 py-8 sm:px-8 sm:py-12">
                 {era !== "all" && (

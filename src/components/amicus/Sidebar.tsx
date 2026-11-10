@@ -4,14 +4,20 @@ import {
   CalendarIcon,
   FileText,
   LayoutDashboard,
-  ListFilter,
   LogOut,
   Moon,
   Plus,
   Search,
   Settings,
   Sun,
-  X, Bookmark, BarChart3, Scale, PenLine, Gavel, BookOpen } from "lucide-react";
+  X,
+  Bookmark,
+  BarChart3,
+  Scale,
+  PenLine,
+  Gavel,
+  BookOpen,
+} from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -43,8 +49,8 @@ const NAV = [
   {
     label: "Assistants",
     items: [
-      { label: "Jurist", to: "/assistants/ark", icon: Scale, hint: "Chief Legal Research Specialist" },
-      { label: "Counsel", to: "/assistants/mike", icon: PenLine, hint: "Courtroom Litigation & Drafting Specialist" },
+      { label: "Jurist", to: "/assistants/ark", icon: Scale, hint: "Legal Research Specialist" },
+      { label: "Counsel", to: "/assistants/mike", icon: PenLine, hint: "Courtroom Drafting Specialist" },
     ],
   },
   {
@@ -59,7 +65,7 @@ const NAV = [
     items: [
       { label: "Bookmarks", to: "/library", icon: Bookmark },
       { label: "History & Insights", to: "/research", icon: BarChart3 },
-          ],
+    ],
   },
 ] as const;
 
@@ -78,7 +84,6 @@ function withinRange(updatedAt: string, range: DateRange, customDate: Date | nul
   const ts = new Date(updatedAt).getTime();
   if (Number.isNaN(ts)) return true;
   if (customDate) {
-    // Match matters created on the selected calendar day (local time)
     const start = new Date(
       customDate.getFullYear(),
       customDate.getMonth(),
@@ -150,84 +155,90 @@ export function Sidebar({
     return filtered;
   }, [threads, sortOrder, dateRange, customDate, search]);
 
-  const isFiltering = dateRange !== "all" || customDate !== null;
-
   return (
     <aside
       className={cn(
-        "h-full max-h-screen w-[272px] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
+        "h-full max-h-screen w-[248px] shrink-0 flex-col overflow-hidden border-r border-[#333333] bg-[#121212] text-[#D0D0CC]",
         className,
       )}
     >
-      <div className="shrink-0 px-6 pb-4 pt-6">
+      {/* Brand Header: 34px Logo + "Section" in Source Serif 22px */}
+      <div className="shrink-0 px-5 pt-6 pb-4">
         <button
           type="button"
           onClick={onNewMatter}
-          className="cursor-pointer appearance-none bg-transparent p-0 border-0"
-          aria-label="Start new chat"
+          className="cursor-pointer appearance-none bg-transparent p-0 border-0 focus:outline-none"
+          aria-label="Start new matter"
         >
-          <Wordmark variant="uppercase" />
+          <Wordmark variant="default" />
         </button>
       </div>
 
-
+      {/* Primary New Matter button: background --on-ink, text --ink, 44px min height */}
       <div className="shrink-0 px-4">
         <button
           type="button"
           onClick={onNewMatter}
-          className="flex w-full items-center gap-2 rounded-sm bg-sidebar-foreground px-2 py-2 text-[13px] font-medium text-sidebar transition-colors hover:bg-sidebar-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[3px] bg-[#F6F2EA] px-4 font-sans text-[13px] font-medium text-[#121212] transition-colors hover:bg-[#F6F2EA]/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F6F2EA]"
+          aria-label="Create new matter"
         >
           <Plus className="h-4 w-4" />
           New matter
         </button>
-</div>
+      </div>
 
-      <nav className="mt-4 shrink-0 space-y-4 px-4" aria-label="Main navigation">
+      {/* Main navigation */}
+      <nav className="mt-5 shrink-0 space-y-4 px-3" aria-label="Main navigation">
         {NAV.map((group) => (
           <div key={group.label}>
-            <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/75">
+            <p className="px-2 pb-1 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3A39E]">
               {group.label}
             </p>
-            {group.items.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                activeOptions={{ exact: true }}
-                activeProps={{ className: "bg-sidebar-foreground/10 text-sidebar-foreground" }}
-                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-[13px] text-sidebar-foreground/80 transition-colors hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                title={"hint" in item ? item.hint : undefined}
-              >
-                <item.icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="min-w-0 truncate">{item.label}</span>
-              </Link>
-            ))}
-            {group.label === "Library" && (
-              <Link
-                to="/settings"
-                activeOptions={{ exact: true }}
-                activeProps={{ className: "bg-sidebar-foreground/10 text-sidebar-foreground" }}
-                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-[13px] text-sidebar-foreground/80 transition-colors hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <Settings className="h-3.5 w-3.5 shrink-0" />
-                <span>Settings</span>
-              </Link>
-            )}
-            {group.label === "Library" && isAdmin && (
-              <Link
-                to="/admin"
-                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-[13px] text-sidebar-foreground/80 hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                <span>Admin</span>
-              </Link>
-            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  activeOptions={{ exact: true }}
+                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F6F2EA]"
+                  title={"hint" in item ? item.hint : undefined}
+                >
+                  <item.icon className="h-3.5 w-3.5 shrink-0 text-[#A3A39E]" />
+                  <span className="min-w-0 truncate">{item.label}</span>
+                </Link>
+              ))}
+              {group.label === "Library" && (
+                <Link
+                  to="/settings"
+                  activeOptions={{ exact: true }}
+                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none"
+                >
+                  <Settings className="h-3.5 w-3.5 shrink-0 text-[#A3A39E]" />
+                  <span>Settings</span>
+                </Link>
+              )}
+              {group.label === "Library" && isAdmin && (
+                <Link
+                  to="/admin"
+                  activeOptions={{ exact: true }}
+                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5 text-[#A3A39E]" />
+                  <span>Admin</span>
+                </Link>
+              )}
+            </div>
           </div>
         ))}
       </nav>
 
-      <div className="mt-4 flex min-h-[220px] flex-1 flex-col">
-        <div className="flex items-center justify-between gap-2 px-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/75">
+      {/* Recent Matters list */}
+      <div className="mt-4 flex min-h-[180px] flex-1 flex-col border-t border-[#333333] pt-3">
+        <div className="flex items-center justify-between gap-2 px-5 pb-2">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3A39E]">
             Recent matters
           </p>
           <div className="flex items-center gap-1">
@@ -235,21 +246,18 @@ export function Sidebar({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label="Filter by specific date"
+                  aria-label="Filter matters by date"
                   className={cn(
-                     "relative rounded-sm p-1.5 text-sidebar-foreground/50 transition-colors hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground",
-                    customDate && "text-gold",
+                    "rounded-[3px] p-1.5 text-[#A3A39E] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA]",
+                    customDate && "text-[#F6F2EA]",
                   )}
                 >
                   <CalendarIcon className="h-3.5 w-3.5" />
-                  {customDate && (
-                    <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-gold" />
-                  )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-3">
+              <PopoverContent align="end" className="w-auto border border-[#333333] bg-[#121212] p-3 text-[#F6F2EA]">
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">
+                  <p className="font-sans text-[11px] font-medium text-[#A3A39E]">
                     Matters on this day
                   </p>
                   <Calendar
@@ -269,106 +277,30 @@ export function Sidebar({
                         setCustomDate(null);
                         setCalendarOpen(false);
                       }}
-                      className="flex w-full items-center justify-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      className="flex w-full items-center justify-center gap-1 rounded-[3px] border border-[#333333] px-2 py-1.5 font-sans text-[11px] text-[#A3A39E] hover:bg-[#262626] hover:text-[#F6F2EA]"
                     >
-                      <X className="h-3 w-3" />
-                      Clear date
+                      <X className="h-3 w-3" /> Clear date
                     </button>
                   )}
                 </div>
               </PopoverContent>
             </Popover>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Sort and filter matters"
-                  className={cn(
-                     "relative rounded-sm p-1.5 text-sidebar-foreground/50 transition-colors hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground",
-                    isFiltering && "text-gold",
-                  )}
-                >
-                  <ListFilter className="h-3.5 w-3.5" />
-                  {isFiltering && (
-                    <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-gold" />
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Sort by date</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={sortOrder}
-                  onValueChange={(v) => setSortOrder(v as SortOrder)}
-                >
-                  <DropdownMenuRadioItem value="newest">
-                    <ArrowDownAZ className="mr-2 h-3.5 w-3.5" />
-                    Newest first
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="oldest">
-                    <ArrowUpAZ className="mr-2 h-3.5 w-3.5" />
-                    Oldest first
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Filter by date</DropdownMenuLabel>
-                {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((range) => (
-                  <DropdownMenuCheckboxItem
-                    key={range}
-                    checked={dateRange === range}
-                    onCheckedChange={() => {
-                      setDateRange(range);
-                      setCustomDate(null);
-                    }}
-                  >
-                    {DATE_RANGE_LABELS[range]}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
 
-        <div className="mt-3 px-3">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/45" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search matters…"
-             className="w-full rounded-sm border border-sidebar-border bg-sidebar-foreground/5 py-2 pl-8 pr-7 text-[13px] text-sidebar-foreground placeholder:text-sidebar-foreground/45 focus:border-sidebar-foreground/50 focus:outline-none"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="sidebar-scroll mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3">
+        <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-3">
           {threads.length === 0 ? (
-            <p className="px-3 pt-2 text-[13px] leading-relaxed text-sidebar-foreground/50">
-              No matters yet. Start one with New matter.
+            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-[#A3A39E]">
+              No matters recorded.
             </p>
           ) : visibleThreads.length === 0 ? (
-            <p className="px-3 pt-2 text-[13px] leading-relaxed text-sidebar-foreground/50">
-              {search.trim()
-                ? `No matters match “${search.trim()}”.`
-                : customDate
-                  ? `No matters on ${format(customDate, "MMM d, yyyy")}.`
-                  : `No matters in ${DATE_RANGE_LABELS[dateRange].toLowerCase()}.`}
+            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-[#A3A39E]">
+              No matters match criteria.
             </p>
           ) : (
             <TooltipProvider delayDuration={400}>
-              <ul className="space-y-0.5">
-                {visibleThreads.map((item) => (
+              <ul className="space-y-1">
+                {visibleThreads.map((item, idx) => (
                   <li key={item.id}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -376,13 +308,13 @@ export function Sidebar({
                           type="button"
                           onClick={() => onSelect(item.id)}
                           className={cn(
-                            "group flex w-full items-start gap-2 border-l-2 px-2 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            "group flex w-full items-start gap-2 rounded-[3px] border-l-2 px-2.5 py-2 text-left transition-colors focus-visible:outline-none",
                             activeId === item.id
-                              ? "border-sidebar-foreground bg-sidebar-foreground/10"
-                              : "border-transparent hover:border-sidebar-foreground/40 hover:bg-sidebar-foreground/5",
+                              ? "border-[#F6F2EA] bg-[#262626] text-[#F6F2EA]"
+                              : "border-transparent text-[#D0D0CC] hover:bg-[#262626] hover:text-[#F6F2EA]",
                           )}
                         >
-                           <span className="mt-0.5 shrink-0 text-sidebar-foreground/45">
+                          <span className="mt-0.5 shrink-0 text-[#A3A39E]">
                             {item.mode === "draft" ? (
                               <FileText className="h-3.5 w-3.5" />
                             ) : (
@@ -390,29 +322,18 @@ export function Sidebar({
                             )}
                           </span>
                           <span className="min-w-0 flex-1">
-                             <span className="block truncate text-[13px] font-normal leading-5 text-sidebar-foreground/85">
+                            <span className="block truncate font-sans text-[13px] font-normal leading-snug">
                               {item.title}
                             </span>
-                            <span
-                              className={cn(
-                                "mt-0.5 block text-[11px] text-sidebar-foreground/60",
-                              )}
-                            >
-                              {item.mode === "draft" ? "Draft" : "Research"} · {(() => {
-                                try {
-                                  const d = new Date(item.updatedAt);
-                                  return Number.isNaN(d.getTime()) ? "Recent" : format(d, "MMM d");
-                                } catch {
-                                  return "Recent";
-                                }
-                              })()}
+                            <span className="mt-0.5 block font-sans text-[11px] text-[#A3A39E]">
+                              Matter {visibleThreads.length - idx} • {item.mode === "draft" ? "Draft" : "Research"}
                             </span>
                           </span>
                         </button>
                       </TooltipTrigger>
                       <TooltipContent
                         side="right"
-                        className="max-w-xs bg-popover text-popover-foreground shadow-md"
+                        className="max-w-xs border border-[#333333] bg-[#262626] text-[#F6F2EA]"
                       >
                         {item.title}
                       </TooltipContent>
@@ -425,45 +346,25 @@ export function Sidebar({
         </div>
       </div>
 
-
-
-
-
-      <div className="relative z-10 shrink-0 border-t border-sidebar-border bg-sidebar px-4 py-3">
+      {/* User Footer: avatar border --ink-4 (#444444), logout */}
+      <div className="shrink-0 border-t border-[#333333] bg-[#121212] px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-sidebar-border bg-sidebar-foreground/10 font-sans text-sm font-semibold text-sidebar-foreground">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-[#444444] bg-[#262626] font-sans text-[12px] font-semibold text-[#F6F2EA]">
               {(userName || "?").charAt(0).toUpperCase()}
             </span>
-            <span className="min-w-0 truncate text-[13px] font-medium text-sidebar-foreground">
-              {userName || "Signed in"}
+            <span className="min-w-0 truncate font-sans text-[13px] font-medium text-[#F6F2EA]">
+              {userName || "Advocate"}
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              aria-pressed={theme === "light"}
-              className="rounded-sm p-2 text-sidebar-foreground/55 transition-colors hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onLogout}
-              title="Logout"
-              aria-label="Logout"
-              className="rounded-sm p-2 text-sidebar-foreground/55 transition-colors hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="Sign out"
+            className="rounded-[3px] p-2 text-[#A3A39E] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA]"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </aside>

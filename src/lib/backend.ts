@@ -6,7 +6,7 @@ const BASE = (
   (typeof process !== "undefined" && (process.env?.["VITE_BACKEND_URL"] || process.env?.["VITE_API_BASE_URL"])) ||
   (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "https://lawyer-backend-9e7q.onrender.com"
+  "https://lawyer-backend-production-5c6d.up.railway.app"
 ).replace(/\/$/, "");
 
 async function clerkToken(): Promise<string | null> {
@@ -31,9 +31,20 @@ export async function backendFetch<T>(path: string, options: BackendFetchOptions
   if (!BASE) throw new Error("Backend is not configured. Set VITE_BACKEND_URL.");
 
   const token = await clerkToken();
-  if (!token) throw new Error("No active session found.");
+  const isOpenEndpoint =
+    path.startsWith("/api/search/") ||
+    path.startsWith("/api/statutes/") ||
+    path.startsWith("/api/judgments/");
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!token && !isOpenEndpoint) {
+    throw new Error("No active session found.");
+  }
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   let body: string | undefined;
   if (options.json !== undefined) {
     headers["Content-Type"] = "application/json";

@@ -66,48 +66,85 @@ function StatutesPage() {
   }
 
   return (
-    <SearchShell title="Search Statutes" subtitle="Find laws, acts, and ordinances instantly.">
+    <SearchShell title="Search Statutes" subtitle="Find Pakistani laws, acts, codes, and ordinances by name, section, or article.">
       <form onSubmit={run} className="mx-auto flex max-w-2xl gap-2">
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Statutes (e.g. Penal Code, Section 19, Article 199)"
-          className="h-11 rounded-sm"
+          placeholder="Search Statutes (e.g. Penal Code, Section 489-F, Article 199)"
+          className="h-11 rounded-[3px] border-[var(--line-strong)] bg-[var(--surface)] text-[14px] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:border-[var(--ink)]"
         />
-        <Button type="submit" className="h-11 gap-2 rounded-sm px-5" disabled={loading}>
-          <Search className="h-4 w-4" /> Search
+        <Button
+          type="submit"
+          className="h-11 min-w-[120px] gap-2 rounded-[3px] bg-[var(--ink)] px-5 font-sans text-[13px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+          disabled={loading}
+          aria-label="Search statutes"
+        >
+          <Search className="h-4 w-4" /> {loading ? "Searching..." : "Search"}
         </Button>
       </form>
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-4">
         <ResultState loading={loading} error={error} empty={results?.length === 0} />
         {!loading &&
           results?.map((r) => (
-            <article key={r.canonical_id || r.title} className="rounded-sm border border-border bg-card p-5">
+            <article
+              key={r.canonical_id || r.title}
+              className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_1px_2px_rgba(18,18,18,0.04)]"
+            >
               <div className="flex items-start justify-between gap-4">
-                <h2 className="font-serif text-lg text-foreground">{r.title}</h2>
-                <span className="shrink-0 rounded-sm border border-border px-2 py-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  {r.in_force ? "In force" : "Repealed"}
+                <div>
+                  <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    {r.canonical_id.replace(/_/g, " ")}
+                  </span>
+                  <h2 className="mt-1 font-serif text-[20px] font-bold text-[var(--text)]">{r.title}</h2>
+                </div>
+                <span
+                  className={`shrink-0 rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${
+                    r.in_force
+                      ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
+                      : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
+                  }`}
+                >
+                  {r.in_force ? "In Force" : "Repealed"}
                 </span>
               </div>
-              {r.snippet && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{r.snippet}</p>}
-              <Button variant="outline" size="sm" className="mt-4 rounded-sm" onClick={() => view(r)}>
+              {r.snippet && (
+                <p className="mt-3 line-clamp-3 font-sans text-[14px] leading-relaxed text-[var(--text-muted)]">
+                  {r.snippet}
+                </p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 min-h-[38px] rounded-[3px] border-[var(--chip-border)] bg-[var(--chip-bg)] font-sans text-[12px] font-medium text-[var(--chip-text)] hover:bg-[var(--surface-2)]"
+                onClick={() => view(r)}
+                aria-label={`View full section for ${r.title}`}
+              >
                 View Full Section
               </Button>
             </article>
           ))}
       </div>
 
-      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+      <Dialog open={Boolean(open)} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-8 text-[var(--text)]">
           <DialogHeader>
-            <DialogTitle className="font-serif">{full?.title || open?.title}</DialogTitle>
+            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+              {open?.canonical_id.replace(/_/g, " ")}
+            </p>
+            <DialogTitle className="mt-1 font-serif text-[26px] font-bold text-[var(--ink)]">
+              {full?.title || open?.title}
+            </DialogTitle>
+            <div className="mt-2 h-[2px] w-[48px] bg-[var(--ink)]" />
           </DialogHeader>
-          {fullLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{full?.text}</p>
-          )}
+          <div className="mt-6 font-serif text-[16px] leading-[1.8] text-[var(--text)] whitespace-pre-wrap">
+            {fullLoading ? (
+              <p className="font-sans text-[14px] text-[var(--text-muted)]">Loading authoritative verbatim text...</p>
+            ) : (
+              full?.text || "No text available."
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </SearchShell>

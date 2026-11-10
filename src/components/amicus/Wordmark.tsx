@@ -1,46 +1,35 @@
-import { AmicusGlyph } from "./AmicusEmblem";
+import { SectionBadge } from "./AmicusEmblem";
 
 export function AmicusMark({
   className = "",
-  animate = false,
 }: {
   className?: string;
   animate?: boolean;
 }) {
-  return <AmicusGlyph className={className} animate={animate} />;
+  return <SectionBadge className={className} />;
 }
 
 export function Wordmark({
   className = "",
-  animateMark = false,
   variant = "default",
 }: {
   className?: string;
   animateMark?: boolean;
   variant?: "default" | "uppercase" | "light";
 }) {
+  const isLight = variant === "light";
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      <AmicusMark className="text-[26px]" animate={animateMark} />
-      {variant === "uppercase" ? (
-        <span
-          className="font-serif text-[24px] font-normal leading-none text-sidebar-foreground"
-        >
-          Section
-        </span>
-      ) : variant === "light" ? (
-        <span
-          className="font-serif text-[28px] font-normal leading-none text-foreground"
-        >
-          Section
-        </span>
-      ) : (
-        <span
-          className="font-serif text-[24px] font-normal leading-none text-foreground"
-        >
-          Section
-        </span>
-      )}
+    <div className={`flex items-center gap-3 ${className}`}>
+      <SectionBadge
+        className={isLight ? "border-[var(--ink)] text-[var(--ink)]" : "border-[var(--on-ink)] text-[var(--on-ink)]"}
+      />
+      <span
+        className={`font-serif text-[22px] font-normal tracking-[-0.01em] leading-none ${
+          isLight ? "text-[var(--text)]" : "text-[var(--on-ink)]"
+        }`}
+      >
+        Section
+      </span>
     </div>
   );
 }

@@ -1,32 +1,46 @@
 import { useState } from "react";
-import { FileText } from "lucide-react";
 import type { CaseResult } from "@/lib/api";
 import { CaseDetailDialog } from "./CaseDetailDialog";
 
 interface CitationLinkProps {
   text: string;
-  data: CaseResult;
+  data?: CaseResult;
+  unverified?: boolean;
+  onClick?: () => void;
 }
 
-/** Inline clickable citation rendered inside markdown body text. */
-export function CitationLink({ text, data }: CitationLinkProps) {
+/** Inline clickable citation rendered inside markdown body text as an authoritative chip. */
+export function CitationLink({ text, data, unverified = false, onClick }: CitationLinkProps) {
   const [open, setOpen] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onClick) {
+      onClick();
+    } else if (data) {
+      setOpen(true);
+    }
+  };
+
+  const isWarn = unverified || (data && data.is_verified === false);
+
   return (
     <>
       <button
         type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        className="inline-flex items-baseline gap-1 rounded-sm border-b border-dotted border-gold/70 px-0.5 align-baseline font-medium text-gold transition-colors hover:bg-gold/10 hover:border-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
-        title={data.title ? `${data.title}: tap for case preview` : "Tap for case preview"}
+        onClick={handleClick}
+        className={
+          isWarn
+            ? "inline-flex items-center gap-1 rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--warn-text)] transition-colors hover:opacity-90 cursor-pointer align-baseline select-none"
+            : "inline-flex items-center gap-1 rounded-[3px] border border-[var(--chip-border)] bg-[var(--chip-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--chip-text)] transition-colors hover:bg-[var(--surface-2)] hover:border-[var(--line-strong)] cursor-pointer align-baseline select-none"
+        }
+        title={data?.title ? `${data.title} — click to view authority` : `${text} — click to view authority`}
+        aria-label={`Authority citation: ${text}`}
       >
-        <FileText className="h-3 w-3 shrink-0 self-center" aria-hidden />
         <span>{text}</span>
       </button>
-      <CaseDetailDialog data={data} open={open} onOpenChange={setOpen} />
+      {data && <CaseDetailDialog data={data} open={open} onOpenChange={setOpen} />}
     </>
   );
 }

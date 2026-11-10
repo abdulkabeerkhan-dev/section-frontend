@@ -1,28 +1,21 @@
-import type { BackendMode, GenerateResponse, Mode } from "@/lib/api";
-import { PrecedentCardList } from "./PrecedentCards";
+import { useState, useMemo } from "react";
+import type { BackendMode, GenerateResponse, Mode, PrecedentCard } from "@/lib/api";
 import { DocumentView } from "./DocumentView";
 import { AnalysisView } from "./AnalysisView";
+import { Button } from "@/components/ui/button";
+import { Check, Copy, ExternalLink, FileText, Scale, ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 interface ResultsPanelProps {
   data: GenerateResponse;
   mode: Mode;
   fileName: string;
   attachmentName: string | null;
-  /** Rendered under the analysis (e.g. the "Continue answer" control). */
   answerFooter?: React.ReactNode;
   onCitationClick?: (citation: string) => void;
 }
 
-const MODE_LABELS: Record<BackendMode, string> = {
-  simple_query: "Simple Query",
-  caselaw_search: "Case Law Search",
-  judgment_lookup: "Judgment Lookup",
-  drafting: "Drafting",
-  document_analysis: "Document Analysis",
-  intake: "Intake",
-};
-
-function precedentKey(card: GenerateResponse["precedent_cards"][number]): string {
+function precedentKey(card: PrecedentCard): string {
   const stableId = card.judgment_id || card.case_id;
   if (stableId) return `id:${stableId.trim().toLowerCase()}`;
   if (card.citation) return `citation:${card.citation.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
@@ -33,7 +26,7 @@ function precedentKey(card: GenerateResponse["precedent_cards"][number]): string
     .toLowerCase()}`;
 }
 
-function uniquePrecedents(cards: GenerateResponse["precedent_cards"]) {
+function uniquePrecedents(cards: PrecedentCard[]) {
   const seen = new Set<string>();
   return cards.filter((card) => {
     const key = precedentKey(card);
@@ -41,15 +34,6 @@ function uniquePrecedents(cards: GenerateResponse["precedent_cards"]) {
     seen.add(key);
     return true;
   });
-}
-
-function ModeBadge({ mode }: { mode: BackendMode }) {
-  return (
-    <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-      <span className="h-px w-5 bg-authority" aria-hidden />
-      <span>{MODE_LABELS[mode]}</span>
-    </span>
-  );
 }
 
 export function ResultsPanel({
@@ -61,62 +45,249 @@ export function ResultsPanel({
   onCitationClick,
 }: ResultsPanelProps) {
   const isDraft = mode === "draft" && Boolean(data.document_text);
-  // Always reset to the latest response's structured precedent cards so stale
-  // cards from a previous turn are never shown.
-  const precedentCards = uniquePrecedents(data.precedent_cards ?? []);
-  const hasStructuredCards = precedentCards.length > 0;
-  const isIntake = data.mode === "intake";
-  // Only show the precedents section for non-intake responses that actually
-  // returned structured precedent cards. Empty arrays or legacy `cases` data
-  // should not trigger the section.
-  const showPrecedentList = !isIntake && hasStructuredCards;
-  const count = precedentCards.length;
+  const precedentCards = useMemo(() => uniquePrecedents(data.precedent_cards ?? []), [data.precedent_cards]);
+  const [authoritiesTab, setAuthoritiesTab] = useState<"statutes" | "cases" | "notes">("cases");
+  const [copiedCite, setCopiedCite] = useState<string | null>(null);
 
-  return (
-    <div className="space-y-7">
-      {(data.mode || attachmentName) && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {data.mode && !isIntake ? <ModeBadge mode={data.mode} /> : <span />}
-          {attachmentName && (
-             <div className="border-l-2 border-primary px-3 py-1">
-              <p className="text-sm text-foreground/90">
-                Editing: <span className="font-medium">{attachmentName}</span>
-              </p>
-            </div>
-          )}
+  // Split authorities into cases and statutes
+  const cases = useMemo(
+    () => precedentCards.filter((c) => !c.citation?.toLowerCase().includes("sec") && !c.case_title?.toLowerCase().includes("section")),
+    [precedentCards],
+  );
+  const statutes = useMemo(
+    () => precedentCards.filter((c) => c.citation?.toLowerCase().includes("sec") || c.case_title?.toLowerCase().includes("section")),
+    [precedentCards],
+  );
+
+  function copyCite(cit: string) {
+    navigator.clipboard.writeText(cit);
+    setCopiedCite(cit);
+    setTimeout(() => setCopiedCite(null), 1800);
+    toast.success(`Copied citation: ${cit}`);
+  }
+
+  // Counsel Mode (2-column layout: document editor + collapsible flyout)
+  if (isDraft) {
+    return (
+      <div className="w-full">
+        {/* Counsel Top Bar Mode Chip: OUTLINED */}
+        <div className="mb-6 flex items-center justify-between border-b border-[var(--line)] pb-3">
+          <div className="flex items-center gap-3">
+            <span className="rounded-[3px] border border-[var(--ink)] bg-transparent px-2.5 py-0.5 font-sans text-[11px] font-bold tracking-wider text-[var(--ink)] uppercase">
+              DRAFT
+            </span>
+            <span className="font-sans text-[12px] text-[var(--text-muted)]">
+              Courtroom Litigation & Drafting Specialist
+            </span>
+          </div>
         </div>
-      )}
 
-      <div className="flex flex-col gap-10">
-        <section>
-          {mode === "draft" && data.document_text ? (
-            <DocumentView text={data.document_text} docId={data.doc_id} fileName={fileName} />
-          ) : (
-            <AnalysisView
-              issues={data.issues}
-              text={data.document_text}
-              citations={data.cases}
-              jobId={data.job_id ?? null}
-              footer={answerFooter}
-              intake={isIntake}
-              precedentStatus={data.precedent_status}
-              precedentStatusWarning={data.precedent_status_warning}
-              supersedingCitation={data.superseding_citation}
-              supersedingCaseName={data.superseding_case_name}
-              isVerified={data.is_verified}
-              onCitationClick={onCitationClick}
-            />
-          )}
-        </section>
+        <DocumentView text={data.document_text || ""} docId={data.doc_id} fileName={fileName} />
+      </div>
+    );
+  }
 
-        {showPrecedentList && (
-          <section>
-            <h3 className="border-b border-border pb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-authority">
-              Authorities <span className="text-muted-foreground">({count})</span>
-            </h3>
-            <PrecedentCardList cards={precedentCards} onCitationClick={onCitationClick} />
-          </section>
-        )}
+  // Jurist Mode (3-column layout: center memo sheet + right authorities panel)
+  return (
+    <div className="w-full">
+      {/* Top Bar Header Mode Chip: SOLID */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
+        <div className="flex items-center gap-3">
+          <span className="rounded-[3px] bg-[var(--ink)] px-2.5 py-0.5 font-sans text-[11px] font-bold tracking-wider text-[var(--on-ink)] uppercase">
+            RESEARCH
+          </span>
+          <span className="font-sans text-[12px] text-[var(--text-muted)]">
+            Chief Legal Research Specialist
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-8 xl:flex-row xl:items-start">
+        {/* Center Memo Sheet (max-w 760px) */}
+        <div className="min-w-0 flex-1">
+          <AnalysisView
+            issues={data.issues}
+            text={data.document_text}
+            citations={data.cases}
+            jobId={data.job_id ?? null}
+            footer={answerFooter}
+            intake={data.mode === "intake"}
+            precedentStatus={data.precedent_status}
+            precedentStatusWarning={data.precedent_status_warning}
+            supersedingCitation={data.superseding_citation}
+            supersedingCaseName={data.superseding_case_name}
+            isVerified={data.is_verified}
+            onCitationClick={onCitationClick}
+          />
+        </div>
+
+        {/* Right Authorities Panel (340–400px wide, --surface background, 1px left border --line) */}
+        <aside
+          className="w-full shrink-0 rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)] xl:w-[360px]"
+          aria-label="Authorities panel"
+        >
+          <div className="border-b border-[var(--line)] pb-3">
+            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+              AUTHORITIES PANEL
+            </p>
+            <h2 className="mt-1 font-serif text-[18px] font-bold text-[var(--ink)]">
+              Primary Sources & Precedents
+            </h2>
+          </div>
+
+          {/* Authorities Panel Tabs: Statutes (count) / Cases (count) / Notes */}
+          <div className="mt-3 flex border-b border-[var(--line)]">
+            <button
+              type="button"
+              onClick={() => setAuthoritiesTab("cases")}
+              className={`flex-1 border-b-2 py-2 font-sans text-[12px] font-semibold transition-colors ${
+                authoritiesTab === "cases"
+                  ? "border-[var(--ink)] text-[var(--ink)]"
+                  : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+              }`}
+            >
+              Cases ({cases.length || precedentCards.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthoritiesTab("statutes")}
+              className={`flex-1 border-b-2 py-2 font-sans text-[12px] font-semibold transition-colors ${
+                authoritiesTab === "statutes"
+                  ? "border-[var(--ink)] text-[var(--ink)]"
+                  : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+              }`}
+            >
+              Statutes ({statutes.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthoritiesTab("notes")}
+              className={`flex-1 border-b-2 py-2 font-sans text-[12px] font-semibold transition-colors ${
+                authoritiesTab === "notes"
+                  ? "border-[var(--ink)] text-[var(--ink)]"
+                  : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+              }`}
+            >
+              Notes
+            </button>
+          </div>
+
+          {/* Authorities Tab Content */}
+          <div className="mt-4 space-y-4 max-h-[700px] overflow-y-auto pr-1">
+            {authoritiesTab === "cases" && (
+              <>
+                {precedentCards.length === 0 ? (
+                  <p className="py-6 text-center font-sans text-[13px] text-[var(--text-muted)]">
+                    No judicial authorities cited for this query.
+                  </p>
+                ) : (
+                  precedentCards.map((card, idx) => {
+                    const cit = card.citation || card.case_id || `Precedent ${idx + 1}`;
+                    const isVerified = card.verified !== false;
+                    const snippet = card.holding || card.summary || card.snippet || "";
+                    return (
+                      <article
+                        key={idx}
+                        className="rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-4 transition-all hover:border-[var(--line-strong)]"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            {cit}
+                          </span>
+                          <span
+                            className={`rounded-[3px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
+                              isVerified
+                                ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
+                                : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
+                            }`}
+                          >
+                            {isVerified ? "✓ Verified" : "⚠️ Unverified"}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-1 font-serif text-[15px] font-bold leading-snug text-[var(--text)]">
+                          {card.case_title || card.case_name || card.title || "Landmark Judgment"}
+                        </h3>
+                        {card.court && (
+                          <p className="mt-0.5 font-sans text-[11px] text-[var(--text-muted)]">
+                            {card.court} {card.year ? `(${card.year})` : ""}
+                          </p>
+                        )}
+
+                        {snippet && (
+                          <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2 font-serif text-[13px] leading-relaxed text-[var(--text)] border border-[var(--line)]">
+                            <span className="passage-highlight">
+                              "{snippet.slice(0, 220)}..."
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line)] pt-2 font-sans text-[11px]">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => copyCite(cit)}
+                              className="font-medium text-[var(--ink)] hover:underline"
+                            >
+                              {copiedCite === cit ? "Copied" : "Cite as"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onCitationClick?.(cit)}
+                              className="font-medium text-[var(--text-muted)] hover:text-[var(--ink)]"
+                            >
+                              Open record
+                            </button>
+                          </div>
+                          {!isVerified && (
+                            <button
+                              type="button"
+                              onClick={() => onCitationClick?.(cit)}
+                              className="rounded-[2px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--warn-text)] hover:opacity-90"
+                            >
+                              Verify against source
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </>
+            )}
+
+            {authoritiesTab === "statutes" && (
+              <>
+                {statutes.length === 0 ? (
+                  <div className="py-6 text-center font-sans text-[13px] text-[var(--text-muted)]">
+                    <p>No statutory provisions specifically flagged in this panel.</p>
+                    <p className="mt-1 text-[11px]">All controlling provisions are hyperlinked directly within the memo text.</p>
+                  </div>
+                ) : (
+                  statutes.map((s, idx) => (
+                    <article key={idx} className="rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-4">
+                      <p className="font-sans text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        {s.citation}
+                      </p>
+                      <h3 className="mt-1 font-serif text-[15px] font-bold text-[var(--text)]">
+                        {s.case_title || s.title}
+                      </h3>
+                      <p className="mt-2 font-sans text-[12px] text-[var(--text-muted)]">
+                        {s.snippet || s.summary}
+                      </p>
+                    </article>
+                  ))
+                )}
+              </>
+            )}
+
+            {authoritiesTab === "notes" && (
+              <div className="py-6 text-center font-sans text-[13px] text-[var(--text-muted)]">
+                <p>Advocate notes and bookmarks for this matter appear here.</p>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );

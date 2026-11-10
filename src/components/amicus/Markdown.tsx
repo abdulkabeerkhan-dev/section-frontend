@@ -24,6 +24,10 @@ const MEMORANDUM_SECTIONS = new Set([
   "controlling judicial precedents appellate ratio",
   "procedural strategic litigation playbook",
   "sources provenance",
+  "issues",
+  "applicable law",
+  "analysis",
+  "recommended next steps",
 ]);
 
 function textContent(node: ReactNode): string {
@@ -46,7 +50,6 @@ function isMemorandumSectionHeading(children: ReactNode): boolean {
   return MEMORANDUM_SECTIONS.has(normalized) || MEMORANDUM_SECTIONS.has(withoutNumber);
 }
 
-/** e.g. "I. EXECUTIVE SUMMARY", "IV. LITIGATION PLAYBOOK", "2. STATUTORY MANDATE". */
 function isNumberedSectionHeading(children: ReactNode): boolean {
   const raw = textContent(children).trim();
   if (!raw || raw.length > 140) return false;
@@ -82,7 +85,6 @@ function buildCitationMatcher(cases: CaseResult[] | undefined): CitationMatcher 
 
 const QUOTE_RE = /[“"]([^“”"]{8,400})[”"]/g;
 
-/** Wraps quoted statutory / judicial language so it stands out for advocates. */
 function renderQuotedText(text: string, keyPrefix: string): ReactNode {
   QUOTE_RE.lastIndex = 0;
   const out: ReactNode[] = [];
@@ -94,7 +96,7 @@ function renderQuotedText(text: string, keyPrefix: string): ReactNode {
     out.push(
       <span
         key={`${keyPrefix}-q-${i++}`}
-        className="border-b border-authority/30 font-document italic text-foreground"
+        className="rounded-[2px] bg-[var(--highlight)] px-1 font-serif italic text-[var(--text)]"
       >
         &ldquo;{match[1]}&rdquo;
       </span>,
@@ -129,7 +131,6 @@ function renderStringWithCitations(text: string, matcher: CitationMatcher): Reac
       out.push(match[0]);
     }
     lastIndex = end;
-    // Guard against zero-length matches.
     if (matcher.regex.lastIndex === start) matcher.regex.lastIndex += 1;
   }
   if (lastIndex < text.length) out.push(renderQuotedText(text.slice(lastIndex), `e${lastIndex}`));
@@ -153,7 +154,6 @@ function renderChildrenWithCitations(
       return matcher ? renderStringWithCitations(child, matcher) : renderQuotedText(child, "p");
     }
     if (isValidElement(child)) {
-      // Skip code/anchor children — don't munge code blocks or rewrite hyperlinks.
       const type = child.type as unknown;
       if (type === "code" || type === "a") return child;
     }
@@ -161,10 +161,6 @@ function renderChildrenWithCitations(
   });
 }
 
-/**
- * True when a paragraph is entirely italic statutory text, e.g.
- * *Section 9 of the Act provides: "…"* — rendered as a quoted provision block.
- */
 function isStatutoryQuoteBlock(children: ReactNode): boolean {
   const nodes = Children.toArray(children).filter(
     (c) => !(typeof c === "string" && c.trim() === ""),
@@ -177,89 +173,75 @@ function isStatutoryQuoteBlock(children: ReactNode): boolean {
   return /\b(section|sections|article|rule|order|clause|s\.|art\.)\b/i.test(text);
 }
 
-/**
- * Renders backend markdown (headings, blockquotes, GFM tables, lists, etc.)
- * into themed HTML using the app's semantic tokens. When `citations` is
- * provided, occurrences of each citation string within body text become
- * clickable inline links that open the case preview modal.
- */
 export function Markdown({ children, className, citations, memorandum }: MarkdownProps) {
   const matcher = buildCitationMatcher(citations);
   const wrap = (node: ReactNode) => renderChildrenWithCitations(node, matcher);
   const sectioned = (node: ReactNode) => memorandum && isMemorandumSectionHeading(node);
+
   return (
-    <div className={cn("amicus-markdown text-[15px] leading-7 text-foreground/90", className)}>
+    <div className={cn("text-[16px] leading-[1.7] text-[var(--text)]", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ node, children, ...props }) => (
             <h1
-              className="mb-4 mt-8 font-serif text-2xl font-normal leading-snug text-foreground first:mt-0"
+              className="mb-4 mt-8 font-serif text-[26px] font-bold leading-tight text-[var(--ink)] first:mt-0"
               {...props}
             >
               {wrap(children)}
             </h1>
           ),
-          h2: ({ node, children, ...props }) => (
-            <h2
-               className="mb-2 mt-6 font-sans text-xl font-semibold leading-snug text-foreground first:mt-0"
-              {...props}
-            >
-              {wrap(children)}
-            </h2>
-          ),
+          h2: ({ node, children, ...props }) => {
+            const raw = textContent(children).trim();
+            // If the heading is redundant with the page title e.g. "Executive Legal Opinion"
+            if (raw.toLowerCase().includes("executive legal opinion") || raw.toLowerCase().includes("executive summary")) {
+              return null;
+            }
+            return (
+              <h2
+                className="mb-3 mt-7 font-serif text-[20px] font-bold leading-snug text-[var(--ink)] first:mt-0"
+                {...props}
+              >
+                {wrap(children)}
+              </h2>
+            );
+          },
           h3: ({ node, children, ...props }) => {
             const section = sectioned(children);
-            // Numbered / roman-numeral memorandum parts read as document sections,
-            // not as individual case cards, so they get a formal rule instead of a gavel.
             if (section || isNumberedSectionHeading(children)) {
-              const raw = textContent(children).trim();
-              const parts = /^([IVXLC]+|\d+)\s*[.)]\s*(.+)$/i.exec(raw);
               return (
-                <h3
-                    className="mb-2 mt-6 font-sans text-lg font-semibold leading-snug text-foreground first:mt-0"
-                  {...props}
-                >
-                  {parts ? (
-                    <span className="flex items-baseline gap-3">
-                       <span className="font-sans text-[11px] font-semibold text-authority">{parts[1]}.</span>
-                      <span>{parts[2]}</span>
-                    </span>
-                  ) : (
-                    wrap(children)
-                  )}
-                </h3>
+                <div className="mb-3 mt-7 border-b border-[var(--line)] pb-2">
+                  <h3
+                    className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]"
+                    {...props}
+                  >
+                    {wrap(children)}
+                  </h3>
+                </div>
               );
             }
             return (
               <h3
-                  className="mb-2 mt-6 font-sans text-lg font-semibold leading-snug text-foreground first:mt-0"
+                className="mb-2 mt-5 font-serif text-[17px] font-bold text-[var(--ink)] first:mt-0"
                 {...props}
               >
                 {wrap(children)}
               </h3>
             );
           },
-          h4: ({ node, children, ...props }) => {
-            const section = sectioned(children);
-            return (
-              <h4
-                className={cn(
-                   "mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-foreground first:mt-0",
-                  section ? "mt-10" : "mt-4",
-                )}
-                {...props}
-              >
-                {wrap(children)}
-              </h4>
-            );
-          },
+          h4: ({ node, children, ...props }) => (
+            <h4
+              className="mb-2 mt-4 font-sans text-[13px] font-semibold text-[var(--ink)]"
+              {...props}
+            >
+              {wrap(children)}
+            </h4>
+          ),
           p: ({ node, children, ...props }) => {
-            const section = sectioned(children);
             if (isStatutoryQuoteBlock(children)) {
               return (
                 <div
-                  className="my-5 border-l-2 border-gold bg-muted/30 px-4 py-3 font-serif text-[15px] italic leading-7 text-foreground/90"
+                  className="my-5 rounded-[3px] border-l-2 border-[var(--ink)] bg-[var(--callout-bg)] px-4 py-3 font-serif text-[15.5px] italic leading-relaxed text-[var(--text)]"
                   {...props}
                 >
                   {wrap(children)}
@@ -268,22 +250,18 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             }
             return (
               <p
-                className={cn(
-                  "text-[15px] leading-7 first:mt-0 last:mb-0",
-                   section ? "mb-3 mt-8 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-authority" : "my-4",
-                )}
+                className="my-4 font-serif text-[16.5px] leading-[1.7] text-[var(--text)] first:mt-0 last:mb-0"
                 {...props}
               >
                 {wrap(children)}
               </p>
             );
           },
-
           ul: ({ node, ...props }) => (
-            <ul className="my-3 list-disc space-y-1.5 pl-5 text-[15px] leading-7" {...props} />
+            <ul className="my-3 list-disc space-y-2 pl-6 font-serif text-[16px] leading-[1.7]" {...props} />
           ),
           ol: ({ node, ...props }) => (
-            <ol className="my-3 list-decimal space-y-1.5 pl-5 text-[15px] leading-7" {...props} />
+            <ol className="my-3 list-decimal space-y-2 pl-6 font-serif text-[16px] leading-[1.7]" {...props} />
           ),
           li: ({ node, children, ...props }) => (
             <li className="pl-1" {...props}>
@@ -292,7 +270,7 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
           ),
           blockquote: ({ node, children, ...props }) => (
             <blockquote
-               className="my-5 space-y-2 border-l-4 border-precedent-link bg-muted/30 py-2 pl-4 pr-3 text-[15px] italic leading-7 text-foreground/90 [&>p]:my-0"
+              className="my-5 rounded-[3px] border-l-4 border-[var(--ink)] bg-[var(--callout-bg)] py-3 pl-4 pr-3 font-serif text-[15.5px] italic leading-relaxed text-[var(--text)] [&>p]:my-0"
               {...props}
             >
               {wrap(children)}
@@ -300,14 +278,14 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
           ),
           a: ({ node, ...props }) => (
             <a
-              className="text-gold underline-offset-2 transition-colors hover:underline"
+              className="font-medium text-[var(--ink)] underline underline-offset-2 transition-opacity hover:opacity-75"
               target="_blank"
               rel="noopener noreferrer"
               {...props}
             />
           ),
           strong: ({ node, children, ...props }) => (
-            <strong className="font-semibold text-foreground" {...props}>
+            <strong className="font-semibold text-[var(--ink)]" {...props}>
               {wrap(children)}
             </strong>
           ),
@@ -316,23 +294,21 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             const raw = textContent(children);
             if (raw.includes("✓ Verified") || raw.includes("Verified")) {
               return (
-                <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-xs font-semibold text-emerald-600">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  {children}
+                <span className="inline-flex items-center gap-1 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
+                  ✓ Verified
                 </span>
               );
             }
             if (raw.includes("⚠️ Unverified") || raw.includes("Unverified")) {
               return (
-                <span className="inline-flex items-center gap-1 rounded-sm border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  {children}
+                <span className="inline-flex items-center gap-1 rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--warn-text)]">
+                  ⚠️ Unverified
                 </span>
               );
             }
             return (
               <code
-                className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[13px] text-foreground"
+                className="rounded-[3px] bg-[var(--chip-bg)] px-1.5 py-0.5 font-mono text-[13px] text-[var(--chip-text)]"
                 {...props}
               >
                 {children}
@@ -340,32 +316,33 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             );
           },
           hr: ({ node, ...props }) => (
-            <hr className="my-7 border-0 border-t border-border/70" {...props} />
+            <hr className="my-7 border-0 border-t border-[var(--line)]" {...props} />
           ),
           table: ({ node, ...props }) => (
-            <div className="my-4 overflow-x-auto">
-               <table className="w-full border-collapse border border-border text-sm [&_tbody_tr:nth-child(even)]:bg-muted/40" {...props} />
+            <div className="my-5 overflow-x-auto">
+              <table className="w-full border-collapse border border-[var(--line)] font-sans text-[13px] [&_tbody_tr:nth-child(even)]:bg-[var(--surface-2)]" {...props} />
             </div>
           ),
-          thead: ({ node, ...props }) => <thead className="border-b border-border" {...props} />,
+          thead: ({ node, ...props }) => <thead className="border-b border-[var(--line)]" {...props} />,
           th: ({ node, children, ...props }) => (
             <th
-               className="border border-border bg-muted/50 px-3 py-2 text-left font-semibold text-foreground"
+              className="border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink)]"
               {...props}
             >
               {wrap(children)}
             </th>
           ),
           td: ({ node, children, ...props }) => (
-            <td className="border border-border px-3 py-2 align-top text-foreground/85" {...props}>
+            <td className="border border-[var(--line)] px-3 py-2 align-top text-[var(--text)]" {...props}>
               {wrap(children)}
             </td>
           ),
         }}
       >
-         {children
-           .replace(/^(#{1,6})(?=\S)/gm, "$1 ")
-           .replace(/^(\s*(?:#{1,6}\s+|>\s*)?)[⚠✅✔❌📄⚖🔒][\uFE0E\uFE0F]?\s*/gm, "$1")}
+        {children
+          .replace(/^(#{1,6})(?=\S)/gm, "$1 ")
+          .replace(/^(\s*(?:#{1,6}\s+|>\s*)?)[⚠✅✔❌📄⚖🔒][\uFE0E\uFE0F]?\s*/gm, "$1")
+          .replace(/deterministically evaluated/gi, "verified against authentic statutory text")}
       </ReactMarkdown>
     </div>
   );

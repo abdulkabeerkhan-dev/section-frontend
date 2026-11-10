@@ -1,16 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Paperclip, X } from "lucide-react";
+import { Loader2, Paperclip, X, ArrowUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  PromptInput,
-  PromptInputButton,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-} from "@/components/ai-elements/prompt-input";
 import {
   Select,
   SelectContent,
@@ -22,39 +14,24 @@ import type { BackendMode, JurisprudenceEra } from "@/lib/api";
 
 export type BackendModeChoice = BackendMode | "auto";
 
-export const BACKEND_MODE_OPTIONS: { value: BackendModeChoice; label: string }[] = [
-  { value: "auto", label: "Auto (detect)" },
-  { value: "simple_query", label: "Simple Query" },
-  { value: "caselaw_search", label: "Case Law Search" },
-  { value: "judgment_lookup", label: "Judgment Lookup" },
-  { value: "drafting", label: "Drafting" },
-  { value: "document_analysis", label: "Document Analysis" },
-];
-
 export const ERA_OPTIONS: { value: JurisprudenceEra; label: string }[] = [
-  { value: "all", label: "All Authorities" },
-  { value: "modern", label: "Modern Jurisprudence (2018–Present)" },
+  { value: "all", label: "All Authorities (1947–2026)" },
   { value: "apex", label: "Apex Precedents Only (Supreme Court)" },
+  { value: "modern", label: "Modern Jurisprudence (2018–Present)" },
 ];
 
 export interface ComposerAttachment {
   name: string;
   image_base64?: string;
   image_mime_type?: string;
-  /** Base64 payload for non-image documents (PDF, DOCX). */
   file_base64?: string;
-  /** MIME type of the non-image document. */
   file_mime_type?: string;
 }
 
-// Hard cap on the original upload before we even try to read it (25 MB).
 const MAX_RAW_BYTES = 25 * 1024 * 1024;
-// Downscale very large scans so vision OCR payloads stay well under timeouts.
 const MAX_DIMENSION = 2200;
 const JPEG_QUALITY = 0.82;
-// Skip re-encoding small images that are already lightweight.
 const COMPRESS_THRESHOLD_BYTES = 900 * 1024;
-// Prompt limits: ~30,000 words or about 120,000 characters.
 const MAX_PROMPT_CHARS = 120_000;
 const MAX_PROMPT_WORDS = 30_000;
 
@@ -64,37 +41,28 @@ interface ComposerProps {
   error: string;
   autoFocus?: boolean;
   compact?: boolean;
-  /** Populate the input externally (e.g. from an example prompt chip). */
   seed?: { text: string; nonce: number } | null;
-  /** Cancel the in-flight query. When provided and loading, shows a Stop button. */
   onStop?: () => void;
-  /** Currently selected backend mode (or "auto" to let the backend infer). */
   modeChoice?: BackendModeChoice;
-  /** Called when the user picks a mode from the dropdown. */
   onModeChoiceChange?: (mode: BackendModeChoice) => void;
-  /** Currently selected jurisprudence era filter. */
   era?: JurisprudenceEra;
-  /** Called when the user picks a jurisprudence era. */
   onEraChange?: (era: JurisprudenceEra) => void;
 }
 
 const IMAGE_MIME = /^image\/(jpeg|jpg|png|webp)$/i;
 const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
 
-/** Strip the `data:...;base64,` prefix, leaving the raw base64 payload. */
 function stripDataPrefix(dataUrl: string): string {
   const comma = dataUrl.indexOf(",");
   return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
 }
 
-/** Count whitespace-separated words in a string. */
 function countWords(s: string): number {
   const trimmed = s.trim();
   if (!trimmed) return 0;
   return trimmed.split(/\s+/).length;
 }
 
-/** Read a file as a data URL. */
 function readAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -104,7 +72,6 @@ function readAsDataURL(file: File): Promise<string> {
   });
 }
 
-/** Load a data URL into an HTMLImageElement so we can draw it to a canvas. */
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -114,15 +81,10 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/**
- * Read an image as a clean base64 string, compressing/downscaling large scans
- * to keep the vision OCR payload small enough to avoid request timeouts.
- */
 async function imageToPayload(file: File): Promise<{ base64: string; mime: string }> {
   const dataUrl = await readAsDataURL(file);
   const fallbackMime = file.type || "image/jpeg";
 
-  // Small, already-light images can be sent as-is.
   if (file.size <= COMPRESS_THRESHOLD_BYTES) {
     try {
       const img = await loadImage(dataUrl);
@@ -136,295 +98,303 @@ async function imageToPayload(file: File): Promise<{ base64: string; mime: strin
 
   try {
     const img = await loadImage(dataUrl);
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
-    const width = Math.max(1, Math.round(img.width * scale));
-    const height = Math.max(1, Math.round(img.height * scale));
+    let { width, height } = img;
+    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+      if (width > height) {
+        height = Math.round((height * MAX_DIMENSION) / width);
+        width = MAX_DIMENSION;
+      } else {
+        width = Math.round((width * MAX_DIMENSION) / height);
+        height = MAX_DIMENSION;
+      }
+    }
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return { base64: stripDataPrefix(dataUrl), mime: fallbackMime };
-    // White matte so transparent PNGs don't turn black when flattened to JPEG.
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0, width, height);
-    const out = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-    return { base64: stripDataPrefix(out), mime: "image/jpeg" };
+    const compressed = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    return { base64: stripDataPrefix(compressed), mime: "image/jpeg" };
   } catch {
     return { base64: stripDataPrefix(dataUrl), mime: fallbackMime };
   }
+}
+
+async function fileToPayload(file: File): Promise<ComposerAttachment> {
+  if (IMAGE_MIME.test(file.type) || IMAGE_EXT.test(file.name)) {
+    const { base64, mime } = await imageToPayload(file);
+    return { name: file.name, image_base64: base64, image_mime_type: mime };
+  }
+  const dataUrl = await readAsDataURL(file);
+  const mime = file.type || "application/octet-stream";
+  return { name: file.name, file_base64: stripDataPrefix(dataUrl), file_mime_type: mime };
 }
 
 export function Composer({
   onSend,
   loading,
   error,
-  autoFocus,
-  compact,
-  seed,
+  autoFocus = false,
+  compact = false,
+  seed = null,
   onStop,
   modeChoice = "auto",
   onModeChoiceChange,
   era = "all",
   onEraChange,
 }: ComposerProps) {
-  const [question, setQuestion] = useState("");
+  const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [processing, setProcessing] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [segmentedMode, setSegmentedMode] = useState<"research" | "draft" | "summarize">("research");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const charCount = question.length;
-  const wordCount = countWords(question);
-  const overChar = charCount > MAX_PROMPT_CHARS;
-  const overWord = wordCount > MAX_PROMPT_WORDS;
-  const nearLimit = charCount > MAX_PROMPT_CHARS * 0.9 || wordCount > MAX_PROMPT_WORDS * 0.9;
-  const canSend = question.trim().length > 0 && !loading && !processing && !overChar && !overWord;
 
-  // Keep the composer focused for a fluid chat feel.
   useEffect(() => {
-    if (autoFocus) textareaRef.current?.focus();
-  }, [autoFocus, loading]);
-
-  // Apply an externally seeded prompt (example chips) and focus the field.
-  useEffect(() => {
-    if (!seed) return;
-    setQuestion(seed.text);
-    requestAnimationFrame(() => {
-      const el = textareaRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(el.value.length, el.value.length);
-      }
-    });
+    if (seed?.text) {
+      setText(seed.text);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(seed.text.length, seed.text.length);
+        }
+      }, 50);
+    }
   }, [seed]);
 
-  function submit() {
+  const wordCount = countWords(text);
+  const charCount = text.length;
+  const overChar = charCount > MAX_PROMPT_CHARS;
+  const overWord = wordCount > MAX_PROMPT_WORDS;
+  const canSend = (text.trim().length > 0 || attachments.length > 0) && !overChar && !overWord && !loading && !processing;
+
+  function handleSend() {
     if (!canSend) return;
-    onSend(question.trim(), attachments);
-    setQuestion("");
+    const q = text.trim();
+    const atts = [...attachments];
+    setText("");
     setAttachments([]);
-    requestAnimationFrame(() => textareaRef.current?.focus());
+    onSend(q, atts);
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    // Snapshot the files BEFORE resetting the input — `e.target.files` is a live
-    // reference, so clearing the value first would empty it and drop the upload.
-    const fileList = e.target.files ? Array.from(e.target.files) : [];
-    e.target.value = "";
-    if (fileList.length === 0) return;
-
-    setUploadError("");
-    setProcessing(true);
-    const rejected: string[] = [];
-
-    try {
-      const processed = await Promise.all(
-        fileList.map(async (file): Promise<ComposerAttachment | null> => {
-          const isImage = IMAGE_MIME.test(file.type) || IMAGE_EXT.test(file.name);
-          if (file.size > MAX_RAW_BYTES) {
-            rejected.push(file.name);
-            return null;
-          }
-          if (!isImage) {
-            // Wait for the full base64 conversion before the attachment is usable,
-            // so a send can never fire with an empty document payload.
-            try {
-              const dataUrl = await readAsDataURL(file);
-              return {
-                name: file.name,
-                file_base64: stripDataPrefix(dataUrl),
-                file_mime_type: file.type || "application/octet-stream",
-              };
-            } catch {
-              rejected.push(file.name);
-              return null;
-            }
-          }
-          try {
-            const { base64, mime } = await imageToPayload(file);
-            return { name: file.name, image_base64: base64, image_mime_type: mime };
-          } catch {
-            return { name: file.name };
-          }
-        }),
-      );
-
-      const kept = processed.filter((a): a is ComposerAttachment => a !== null);
-      if (kept.length > 0) setAttachments((prev) => [...prev, ...kept]);
-      if (rejected.length > 0) {
-        setUploadError(
-          `${rejected.join(", ")} ${rejected.length > 1 ? "are" : "is"} too large (max 25 MB). Please upload a smaller scan.`,
-        );
-      }
-    } finally {
-      setProcessing(false);
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   }
 
-  function removeAttachment(index: number) {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setProcessing(true);
+    setUploadError("");
+    try {
+      const added: ComposerAttachment[] = [];
+      for (const f of files) {
+        if (f.size > MAX_RAW_BYTES) {
+          setUploadError(`"${f.name}" exceeds the 25 MB file limit.`);
+          continue;
+        }
+        added.push(await fileToPayload(f));
+      }
+      setAttachments((prev) => [...prev, ...added]);
+    } catch {
+      setUploadError("Could not process attached file.");
+    } finally {
+      setProcessing(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   return (
-    <section>
+    <div className="w-full">
+      {/* Hidden file input */}
       <input
         ref={fileRef}
         type="file"
         multiple
-        accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        onChange={handleFile}
+        accept=".pdf,.docx,.doc,.txt,image/*"
         className="hidden"
+        onChange={handleFileSelect}
+        aria-label="Upload document or scan"
       />
 
-      <PromptInput
-        accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        multiple
-        onSubmit={(_, event) => {
-          event.preventDefault();
-          submit();
-        }}
-        className="rounded-sm border-input bg-card shadow-none transition-colors focus-within:border-primary"
-      >
+      {/* Ask Box: --surface, 1px --ink border, soft shadow, radius 3px */}
+      <div className="overflow-hidden rounded-[3px] border border-[var(--ink)] bg-[var(--surface)] shadow-[0_1px_4px_rgba(18,18,18,0.06)]">
+        {/* Segmented Control on top row: Research | Draft | Summarize */}
+        <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface-2)] px-4 py-2">
+          <div className="flex items-center gap-1 rounded-[3px] bg-[var(--chip-bg)] p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSegmentedMode("research");
+                onModeChoiceChange?.("caselaw_search");
+              }}
+              className={cn(
+                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                segmentedMode === "research"
+                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
+              )}
+            >
+              Research
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSegmentedMode("draft");
+                onModeChoiceChange?.("drafting");
+              }}
+              className={cn(
+                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                segmentedMode === "draft"
+                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
+              )}
+            >
+              Draft
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSegmentedMode("summarize");
+                onModeChoiceChange?.("document_analysis");
+              }}
+              className={cn(
+                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                segmentedMode === "summarize"
+                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
+              )}
+            >
+              Summarize
+            </button>
+          </div>
+
+          <span className="font-sans text-[11px] text-[var(--text-muted)]">
+            Press Enter ↵ to submit
+          </span>
+        </div>
+
+        {/* Attachments preview */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 px-3 pt-2.5">
-            {attachments.map((att, i) => (
+          <div className="flex flex-wrap gap-2 border-b border-[var(--line)] bg-[var(--surface-2)] p-2.5">
+            {attachments.map((att, idx) => (
               <span
-                key={`${att.name}-${i}`}
-                className="flex items-center gap-2 rounded-md border border-border bg-muted/40 py-1 pl-2.5 pr-1 text-[12px] text-foreground/90"
+                key={idx}
+                className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1 font-sans text-[12px] text-[var(--text)]"
               >
-                <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="max-w-[180px] truncate">{att.name}</span>
-                <Button
+                <Paperclip className="h-3 w-3 text-[var(--text-muted)]" />
+                <span className="max-w-[200px] truncate">{att.name}</span>
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeAttachment(i)}
-                  className="h-6 w-6 rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  aria-label={`Remove ${att.name}`}
+                  onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
+                  className="text-[var(--text-muted)] hover:text-[var(--text)]"
+                  aria-label={`Remove attachment ${att.name}`}
                 >
                   <X className="h-3 w-3" />
-                </Button>
+                </button>
               </span>
             ))}
           </div>
         )}
 
-        <PromptInputTextarea
-          ref={textareaRef}
-          value={question}
-          maxLength={MAX_PROMPT_CHARS}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder={compact ? "Ask a follow-up…" : "Ask a legal question or request a draft…"}
-          className={cn("max-h-44 px-5 py-5 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground", compact ? "min-h-14" : "min-h-28")}
-        />
+        {/* Textarea Input Field */}
+        <div className="p-4">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            autoFocus={autoFocus}
+            rows={compact ? 2 : 3}
+            placeholder="Ask a legal question, draft a pleading, or search across Pakistani case law and statutes..."
+            className="w-full resize-none border-0 bg-transparent font-sans text-[15px] leading-relaxed text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none"
+            aria-label="Legal query or drafting prompt"
+          />
+        </div>
 
-        <PromptInputFooter className="border-t border-border px-3 py-2">
-          <PromptInputTools>
-            <PromptInputButton
+        {/* Bottom controls row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] bg-[var(--surface-2)] px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={processing}
-              aria-label="Attach document"
-              tooltip="Attach document"
-              className="text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[3px] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--chip-bg)] hover:text-[var(--ink)]"
+              aria-label="Attach judgment or document file"
+              title="Attach judgment or document file"
             >
               {processing ? (
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Paperclip className="size-4" />
+                <Paperclip className="h-4 w-4" />
               )}
-            </PromptInputButton>
-
-            {onModeChoiceChange && (
-              <Select
-                value={modeChoice}
-                onValueChange={(v) => onModeChoiceChange(v as BackendModeChoice)}
-              >
-                <SelectTrigger
-                  aria-label="Query mode"
-                  className="h-8 w-auto min-w-0 max-w-[180px] gap-1 rounded-sm border-0 bg-transparent px-2 text-[12px] font-medium text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring shadow-none hover:bg-muted hover:text-foreground focus:ring-0 focus:ring-offset-0 sm:max-w-none"
-                >
-                  <span className="truncate">
-                    <span className="text-muted-foreground/80">Mode: </span><SelectValue />
-                  </span>
-                </SelectTrigger>
-                <SelectContent align="start" className="min-w-[200px]">
-                  {BACKEND_MODE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="text-[13px]">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            </button>
 
             {onEraChange && (
               <Select value={era} onValueChange={(v) => onEraChange(v as JurisprudenceEra)}>
                 <SelectTrigger
-                  aria-label="Jurisprudence era"
-                  className={cn(
-                    "h-8 w-auto min-w-0 max-w-[220px] gap-1 rounded-sm border-0 bg-transparent px-2 text-[12px] font-medium shadow-none focus-visible:ring-1 focus-visible:ring-ring hover:bg-muted hover:text-foreground focus:ring-0 focus:ring-offset-0 sm:max-w-none",
-                    era === "all" ? "text-muted-foreground" : "bg-muted text-foreground",
-                  )}
+                  aria-label="Sources repository filter"
+                  className="h-9 min-h-[36px] w-auto gap-1 rounded-[3px] border border-[var(--line)] bg-[var(--surface)] px-2.5 font-sans text-[12px] font-medium text-[var(--text)] focus:ring-0"
                 >
-                  <span className="truncate">
-                    <span className="text-muted-foreground/80">Sources: </span><SelectValue />
-                  </span>
+                  <span className="text-[var(--text-muted)]">Sources: </span>
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent align="start" className="min-w-[230px]">
+                <SelectContent align="start" className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)]">
                   {ERA_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="text-[13px]">
+                    <SelectItem key={opt.value} value={opt.value} className="font-sans text-[13px] text-[var(--text)]">
                       {opt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
-          </PromptInputTools>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <span
-              className={cn(
-                "hidden whitespace-nowrap text-[11px] tabular-nums transition-colors sm:inline",
-                !nearLimit && "sm:hidden",
-                overChar || overWord
-                  ? "text-destructive"
-                  : nearLimit
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground",
-              )}
-              aria-live="polite"
-            >
-              {wordCount.toLocaleString()} / {MAX_PROMPT_WORDS.toLocaleString()} words
-            </span>
-
-            <span className="hidden text-[11px] text-muted-foreground md:inline">Enter to send</span>
-            <PromptInputSubmit
-              aria-label={loading ? "Stop" : "Send"}
-              status={loading ? "streaming" : error ? "error" : "ready"}
-              onStop={onStop}
-              disabled={!loading && !canSend}
-              className={cn(
-                "size-8 rounded-sm",
-                !loading && (canSend ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground opacity-60"),
-                loading &&
-                  "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20",
-              )}
-            />
           </div>
-        </PromptInputFooter>
-      </PromptInput>
+
+          <div className="flex items-center gap-3">
+            {loading ? (
+              <Button
+                type="button"
+                onClick={onStop}
+                className="min-h-[44px] rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-5 font-sans text-[13px] font-medium text-[var(--warn-text)] hover:opacity-90"
+                aria-label="Stop current query"
+              >
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={handleSend}
+                disabled={!canSend}
+                className={cn(
+                  "min-h-[44px] min-w-[96px] gap-2 rounded-[3px] px-5 font-sans text-[13px] font-medium transition-all",
+                  canSend
+                    ? "bg-[var(--ink)] text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+                    : "bg-[var(--chip-bg)] text-[var(--text-muted)] cursor-not-allowed opacity-60",
+                )}
+                aria-label="Submit query"
+              >
+                <span>Submit</span>
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {(uploadError || error || overChar || overWord) && (
-        <p className="mt-2.5 text-[13px] text-destructive">
+        <p className="mt-2 text-[13px] text-[var(--warn-text)]">
           {uploadError ||
             error ||
             (overChar
-              ? `Prompt exceeds the ${MAX_PROMPT_CHARS.toLocaleString()} character limit.`
-              : `Prompt exceeds the ${MAX_PROMPT_WORDS.toLocaleString()} word limit.`)}
+              ? `Prompt exceeds character limit (${MAX_PROMPT_CHARS.toLocaleString()}).`
+              : `Prompt exceeds word limit (${MAX_PROMPT_WORDS.toLocaleString()}).`)}
         </p>
       )}
-    </section>
+    </div>
   );
 }
