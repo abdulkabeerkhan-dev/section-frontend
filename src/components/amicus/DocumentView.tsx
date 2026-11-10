@@ -37,6 +37,8 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
     text && (
       text.includes("PARTIAL RESULT") ||
       text.includes("PARTIAL LEGAL RESEARCH RECORD") ||
+      text.includes("PARTIAL RESEARCH RECORD") ||
+      text.includes("issues unresolved") ||
       text.includes("UNVERIFIED NOTICE") ||
       text.includes("Verification Notice") ||
       text.includes("⚠️")
@@ -45,6 +47,10 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
 
   async function handleDownload(format: "docx" | "pdf") {
     if (!text.trim()) return;
+    if (isPartialRecord) {
+      toast.error("Export blocked: document contains unverified authorities.");
+      return;
+    }
     setDownloading(format);
     try {
       if (format === "docx") await downloadDocxFromText(text, fileName);
@@ -141,11 +147,16 @@ export function DocumentView({ text, docId, fileName }: DocumentViewProps) {
             <span>{copied ? "Copied" : "Copy"}</span>
           </Button>
 
+          {isPartialRecord && (
+            <span className="font-sans text-[11px] text-[var(--warn-text)]">
+              Export blocked: partial record
+            </span>
+          )}
           <Button
             size="sm"
             onClick={() => handleDownload("docx")}
-            disabled={downloading !== null}
-            className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+            disabled={downloading !== null || isPartialRecord}
+            className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)] disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Export document to Word"
           >
             <FileDown className="h-3.5 w-3.5" />

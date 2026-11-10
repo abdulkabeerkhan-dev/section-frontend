@@ -890,9 +890,15 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     superseding_citation: asString(rec.superseding_citation) ?? undefined,
     superseding_case_name: asString(rec.superseding_case_name) ?? undefined,
     is_verified:
-      rec.is_verified === true ||
-      p.is_verified === true ||
-      Boolean(typeof p.answer === 'string' && p.answer.includes('✓ VERIFIED RESEARCH MEMORANDUM')),
+      (rec.is_verified === true ||
+       p.is_verified === true ||
+       Boolean(typeof p.answer === 'string' && p.answer.includes('✓ VERIFIED RESEARCH MEMORANDUM'))) &&
+      !Boolean(typeof p.answer === 'string' && (
+        p.answer.includes('PARTIAL RESEARCH RECORD') ||
+        p.answer.includes('PARTIAL RESULT') ||
+        p.answer.includes('UNVERIFIED NOTICE') ||
+        p.answer.includes('issues unresolved')
+      )),
   };
 }
 

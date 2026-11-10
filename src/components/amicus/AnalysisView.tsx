@@ -97,6 +97,8 @@ export function AnalysisView({
       text && (
         text.includes("PARTIAL RESULT") ||
         text.includes("PARTIAL LEGAL RESEARCH RECORD") ||
+        text.includes("PARTIAL RESEARCH RECORD") ||
+        text.includes("issues unresolved") ||
         text.includes("UNVERIFIED NOTICE") ||
         text.includes("Verification Notice") ||
         text.includes("⚠️")
@@ -205,11 +207,16 @@ export function AnalysisView({
               <span>{copied ? "Copied" : "Copy"}</span>
             </Button>
 
+            {isPartialResult && (
+              <span className="font-sans text-[11px] text-[var(--warn-text)]">
+                Export blocked: partial record
+              </span>
+            )}
             <Button
               size="sm"
               onClick={handleExport}
-              disabled={exporting}
-              className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+              disabled={exporting || isPartialResult}
+              className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)] disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Export memorandum to Word document"
             >
               {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
