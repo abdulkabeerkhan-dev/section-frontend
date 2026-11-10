@@ -293,6 +293,8 @@ export function QueryWorkspace() {
     return [...persisted, ...extra];
   }, [records, activeThreadId, draftTurns]);
 
+  const activeTurn = activeTurns[activeTurns.length - 1];
+
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
@@ -377,7 +379,7 @@ export function QueryWorkspace() {
       max_cases: 15,
       category: "general",
     };
-    if (assistant) request.assistant = assistant;
+    if (assistant) request.assistant = (assistant === "counsel" ? "mike" : assistant === "jurist" ? "ark" : assistant);
     if (modeChoice !== "auto") request.backend_mode = modeChoice;
     if (era !== "all") request.era = era;
     if (mode === "draft") request.doc_type = docType ?? "Civil Suit";
@@ -685,7 +687,7 @@ export function QueryWorkspace() {
                 <span className="text-[var(--text-muted)]">Matters</span>
                 <span className="text-[var(--text-muted)]">/</span>
                 <span className="font-medium text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
-                  {activeTurn?.question || (threads.find((t) => t.id === activeId)?.title) || "Active Matter"}
+                  {activeTurn?.question || (threads.find((t) => t.id === activeThreadId)?.title) || "Active Matter"}
                 </span>
                 <span className="text-[var(--text-muted)]">/</span>
                 <span className="font-semibold text-[var(--ink)]">

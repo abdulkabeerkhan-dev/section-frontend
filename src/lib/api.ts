@@ -33,6 +33,8 @@ export interface CaseResult {
   statutes: string[];
   sections: string[];
   verified: boolean;
+  verification_status?: string;
+  is_verified?: boolean;
   /** URL to the official judgment PDF, if available. */
   pdf_url?: string;
 }
@@ -103,6 +105,11 @@ export interface PrecedentCard {
   source_type?: string;
   /** Key paragraphs of the judgment highlighted by the backend. */
   important_paragraphs?: string[];
+  verified?: boolean;
+  is_verified?: boolean;
+  verification_status?: string;
+  summary?: string;
+  snippet?: string;
 }
 
 export interface GenerateResponse {
@@ -205,7 +212,7 @@ export interface GenerateRequest {
   /** Restrict retrieval to a jurisprudence era (recency / landmark authority). */
   era?: JurisprudenceEra;
   /** Active assistant persona (Ark = research, Mike = drafting). */
-  assistant?: "ark" | "mike";
+  assistant?: "ark" | "mike" | "jurist" | "counsel";
 }
 
 /** Build the era-specific filter payload sent to the backend. */
@@ -683,6 +690,7 @@ interface BackendPayload {
   answer?: unknown;
   doc_id?: unknown;
   query_id?: unknown;
+  is_verified?: unknown;
 }
 
 /**
