@@ -164,6 +164,15 @@ export function Composer({
     }
   }, [seed]);
 
+  // Auto-grow textarea with a minimum 2-row height and maximum 240px
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      const scrollH = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollH, 56), 240)}px`;
+    }
+  }, [text]);
+
   const wordCount = countWords(text);
   const charCount = text.length;
   const overChar = charCount > MAX_PROMPT_CHARS;
@@ -310,7 +319,7 @@ export function Composer({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus={autoFocus}
-            rows={compact ? 2 : 3}
+            rows={2}
             placeholder="Ask a legal question, draft a pleading, or search across Pakistani case law and statutes..."
             className="w-full resize-none border-0 bg-transparent font-sans text-[15px] leading-relaxed text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none"
             aria-label="Legal query or drafting prompt"

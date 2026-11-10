@@ -327,6 +327,17 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             </strong>
           ),
           em: ({ node, children, ...props }) => <em {...props}>{wrap(children)}</em>,
+          pre: ({ node, ...props }) => (
+            <pre
+              className="my-4 overflow-x-auto rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-3 font-mono text-[13px] text-[var(--text)]"
+              style={{
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                maxWidth: "100%",
+              }}
+              {...props}
+            />
+          ),
           code: ({ node, children, ...props }) => {
             const raw = textContent(children);
             if (raw.includes("✓ Verified") || raw.includes("Verified")) {
@@ -346,6 +357,11 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
             return (
               <code
                 className="rounded-[3px] bg-[var(--chip-bg)] px-1.5 py-0.5 font-mono text-[13px] text-[var(--chip-text)]"
+                style={{
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  maxWidth: "100%",
+                }}
                 {...props}
               >
                 {children}
