@@ -4,6 +4,7 @@ import { FileSearch, FileText, FolderClosed, Menu, Paperclip, Plus, Settings } f
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
+import { format } from "date-fns";
 
 import {
   ERA_LABELS,
