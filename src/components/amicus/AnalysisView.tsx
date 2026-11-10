@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Copy, Check, FileDown, Loader2, ArrowRight } from "lucide-react";
+import { Copy, Check, FileDown, Loader2, ArrowRight, Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 
@@ -224,6 +224,7 @@ export function AnalysisView({
 }: AnalysisViewProps) {
   const queryText = useQueryText();
   const [copied, setCopied] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showFullQuestion, setShowFullQuestion] = useState(false);
 
@@ -327,7 +328,7 @@ export function AnalysisView({
     <div className="w-full">
       {/* Memo Sheet: max-w-[820px], background --surface, 1px --line border */}
       <div className="memo-sheet">
-        {/* Header Label: Split into two flex items ("PRIVILEGED & CONFIDENTIAL" left, "PREPARED FOR COUNSEL" right) */}
+        {/* Header Label: Split into two flex items ("PRIVILEGED & CONFIDENTIAL" left, "DRAFT FOR COUNSEL REVIEW" right) */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] pb-4">
           <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
             PRIVILEGED & CONFIDENTIAL
@@ -345,7 +346,7 @@ export function AnalysisView({
           <div className="memo-rule mt-3 h-[3px] w-16 bg-[var(--ink)]" />
         </div>
 
-        {/* Top Action Bar: Copy and Export (with no duplicate Partial banner inside the memo) */}
+        {/* Top Action Bar: Copy, Bookmark, and Export to Word / PDF */}
         <div className="my-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] pb-5">
           <div className="flex items-center gap-2">
             <Button
@@ -358,6 +359,19 @@ export function AnalysisView({
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               <span>{copied ? "Copied" : "Copy"}</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBookmarked(!bookmarked);
+                toast.success(bookmarked ? "Removed bookmark." : "Memorandum bookmarked.");
+              }}
+              className="h-8 gap-1.5 rounded-[3px] border-[var(--line)] bg-[var(--surface)] font-sans text-[12px] font-medium text-[var(--text)] hover:bg-[var(--chip-bg)]"
+              aria-label="Bookmark memorandum"
+            >
+              <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-[var(--ink)] text-[var(--ink)]" : ""}`} />
+              <span>{bookmarked ? "Bookmarked" : "Bookmark"}</span>
+            </Button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -365,11 +379,11 @@ export function AnalysisView({
               size="sm"
               onClick={handleExport}
               disabled={exporting}
-              className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
-              aria-label="Export memorandum to Word document"
+              className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3.5 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+              aria-label="Export memorandum to Word or PDF document"
             >
               {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-              <span>Export</span>
+              <span>Export to Word / PDF</span>
             </Button>
           </div>
         </div>
@@ -379,11 +393,11 @@ export function AnalysisView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
             <div className="grid items-baseline" style={{ gridTemplateColumns: "72px minmax(0, 1fr)" }}>
               <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)] text-[11px]">TO:</span>
-              <span className="font-medium text-[var(--text)]" style={{ overflowWrap: "anywhere" }}>Kabeer - Advocate</span>
+              <span className="font-medium text-[var(--text)]" style={{ overflowWrap: "anywhere" }}>Kabeer · Advocate</span>
             </div>
             <div className="grid items-baseline" style={{ gridTemplateColumns: "72px minmax(0, 1fr)" }}>
               <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)] text-[11px]">DATE:</span>
-              <span className="font-medium text-[var(--text)]" style={{ overflowWrap: "anywhere" }}>November 2026 - database current to November 2026</span>
+              <span className="font-medium text-[var(--text)]" style={{ overflowWrap: "anywhere" }}>November 2026 · database current to November 2026</span>
             </div>
             <div className="grid items-baseline" style={{ gridTemplateColumns: "72px minmax(0, 1fr)" }}>
               <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)] text-[11px]">FROM:</span>
@@ -439,7 +453,7 @@ export function AnalysisView({
         {shortAnswer && (
           <div className="short-answer-box mb-6">
             <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)] mb-1.5">
-              SHORT DIRECT ANSWER
+              SHORT ANSWER
             </p>
             <div className="font-serif text-[15.5px] leading-relaxed text-[var(--text)]">
               {shortAnswer}

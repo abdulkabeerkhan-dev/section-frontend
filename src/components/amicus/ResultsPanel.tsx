@@ -148,6 +148,9 @@ export function ResultsPanel({
   }, [data.statutes, precedentCards]);
 
   const totalCited = precedentCards.length + statutes.length;
+  const verifiedStatutes = statutes.filter((s) => s.verified).length;
+  const verifiedCases = precedentCards.filter((c) => c.verified !== false).length;
+  const totalVerified = verifiedStatutes + verifiedCases;
 
   function handleSelectAuthority(cit: string) {
     setSelectedCitation(cit);
@@ -201,7 +204,7 @@ export function ResultsPanel({
           AUTHORITIES
         </p>
         <h2 className="mt-0.5 font-serif text-[18px] font-bold text-[var(--ink)]">
-          {totalCited} cited · {totalCited} verified
+          {totalCited} cited · {totalVerified} verified
         </h2>
       </div>
 
