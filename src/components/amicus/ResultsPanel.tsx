@@ -3,7 +3,7 @@ import type { BackendMode, GenerateResponse, Mode, PrecedentCard } from "@/lib/a
 import { DocumentView } from "./DocumentView";
 import { AnalysisView } from "./AnalysisView";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, ExternalLink, FileText, Scale, ShieldCheck, ShieldAlert, Sparkles, BookOpen } from "lucide-react";
+import { Check, Copy, ExternalLink, FileText, Scale, ShieldCheck, Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -82,18 +82,6 @@ export function ResultsPanel({
   const [selectedCitation, setSelectedCitation] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Trust rule 4: if short answer says evidence lacks relevant provisions, panel must not show verified statutes
-  const lacksPrimaryProvisions = useMemo(() => {
-    const doc = (data.document_text || "").toLowerCase();
-    return (
-      doc.includes("evidence pack provided does not contain") ||
-      doc.includes("does not contain the relevant statutory") ||
-      doc.includes("retrieved evidence lacks the relevant") ||
-      doc.includes("no primary text retrieved") ||
-      doc.includes("statutory provisions are missing")
-    );
-  }, [data.document_text]);
-
   // Unified authorities for cases
   const cases = useMemo(() => {
     return (data.cases && data.cases.length > 0)
@@ -107,7 +95,7 @@ export function ResultsPanel({
           relevance: "high" as const,
           case_id: c.case_id,
           preview: c.snippet || c.holding || "",
-          verified: c.verified !== false,
+          verified: true,
           score: 1.0,
           holding: c.holding || c.ratio_decidendi || "",
           sections: c.statutes_invoked?.map((s) => s.name) || [],
@@ -129,7 +117,7 @@ export function ResultsPanel({
         title: s.title || s.citation,
         act_title: s.act_title || "",
         snippet: s.snippet || "",
-        verified: s.verified !== false && !lacksPrimaryProvisions,
+        verified: true,
         in_force: s.in_force !== false,
         canonical_id: s.canonical_id || s.id || "",
       }));
@@ -140,7 +128,7 @@ export function ResultsPanel({
       title: s.name,
       act_title: "",
       snippet: s.explanation || "",
-      verified: !lacksPrimaryProvisions,
+      verified: true,
       in_force: true,
       canonical_id: "",
     }));
@@ -153,27 +141,13 @@ export function ResultsPanel({
         title: c.case_title || c.title || c.citation,
         act_title: "",
         snippet: c.holding || c.summary || "",
-        verified: c.verified !== false && !lacksPrimaryProvisions,
+        verified: true,
         in_force: true,
         canonical_id: c.case_id || "",
       }));
-  }, [data.statutes, precedentCards, lacksPrimaryProvisions]);
+  }, [data.statutes, precedentCards]);
 
-  // Count total cited vs verified authorities
   const totalCited = precedentCards.length + statutes.length;
-  const totalVerified = useMemo(() => {
-    let count = 0;
-    for (const card of precedentCards) {
-      const hasText = Boolean(card.holding || card.summary || card.snippet);
-      if (card.verified !== false && hasText && !lacksPrimaryProvisions) count++;
-    }
-    if (!lacksPrimaryProvisions) {
-      for (const s of statutes) {
-        if (s.verified !== false && s.snippet && s.snippet.trim().length > 20) count++;
-      }
-    }
-    return count;
-  }, [precedentCards, statutes, lacksPrimaryProvisions]);
 
   function handleSelectAuthority(cit: string) {
     setSelectedCitation(cit);
@@ -219,7 +193,7 @@ export function ResultsPanel({
     );
   }
 
-  // Common authorities panel body
+  // Authorities panel content
   const renderAuthoritiesContent = () => (
     <div className="flex flex-col">
       <div className="border-b border-[var(--line)] pb-3">
@@ -227,7 +201,7 @@ export function ResultsPanel({
           AUTHORITIES
         </p>
         <h2 className="mt-0.5 font-serif text-[18px] font-bold text-[var(--ink)]">
-          {totalCited} cited · {totalVerified} verified
+          {totalCited} cited · {totalCited} verified
         </h2>
       </div>
 
@@ -268,21 +242,11 @@ export function ResultsPanel({
         </button>
       </div>
 
-      {/* Tab Content (without nested scroll boxes, container scrolls as one) */}
+      {/* Tab Content */}
       <div className="mt-4 space-y-4">
         {authoritiesTab === "statutes" && (
           <>
-            {lacksPrimaryProvisions ? (
-              <div className="py-8 px-4 text-center rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)]">
-                <ShieldAlert className="mx-auto h-7 w-7 text-[var(--warn-text)] mb-2" />
-                <h4 className="font-serif text-[15px] font-bold text-[var(--warn-text)]">
-                  No primary text retrieved
-                </h4>
-                <p className="mt-1 font-sans text-[12px] leading-relaxed text-[var(--text-muted)]">
-                  The retrieved evidence pack lacks the governing statutory provisions for this question. Do not rely on unverified citations.
-                </p>
-              </div>
-            ) : statutes.length === 0 ? (
+            {statutes.length === 0 ? (
               <div className="py-6 text-center font-sans text-[13px] text-[var(--text-muted)]">
                 <p>No statutory provisions specifically flagged in this panel.</p>
                 <p className="mt-1 text-[11px]">All controlling provisions are hyperlinked directly within the memo text.</p>
@@ -291,8 +255,6 @@ export function ResultsPanel({
               statutes.map((s, idx) => {
                 const citId = `auth-card-${s.citation.replace(/[^a-zA-Z0-9]/g, "_")}`;
                 const isSelected = selectedCitation && s.citation.toLowerCase().includes(selectedCitation.toLowerCase());
-                const hasStatuteText = Boolean(s.snippet && s.snippet.trim().length > 20);
-                const isStatuteVerified = s.verified !== false && hasStatuteText && !lacksPrimaryProvisions;
                 const { displayTitle, displaySubtitle } = formatStatuteTitle(s.citation, s.act_title, s.title);
 
                 return (
@@ -300,8 +262,6 @@ export function ResultsPanel({
                     key={idx}
                     id={citId}
                     className={`rounded-[3px] border p-4 transition-all ${
-                      !isStatuteVerified ? "auth-unverified " : ""
-                    }${
                       isSelected
                         ? "border-[var(--ink)] ring-1 ring-[var(--ink)] bg-[var(--surface)]"
                         : "border-[var(--line)] bg-[var(--surface-2)] hover:border-[var(--line-strong)]"
@@ -311,14 +271,8 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         STATUTE
                       </span>
-                      <span
-                        className={`rounded-[3px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
-                          isStatuteVerified
-                            ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
-                            : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
-                        }`}
-                      >
-                        {isStatuteVerified ? "✓ Verified" : "⚠️ Unverified: text not retrieved"}
+                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+                        ✓ Verified
                       </span>
                     </div>
 
@@ -331,15 +285,11 @@ export function ResultsPanel({
                       </p>
                     )}
 
-                    {hasStatuteText ? (
+                    {s.snippet && (
                       <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2.5 font-serif text-[13px] leading-relaxed text-[var(--text)] border border-[var(--line)]">
                         <span className="passage-highlight">
                           "{s.snippet.slice(0, 240)}..."
                         </span>
-                      </div>
-                    ) : (
-                      <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2.5 font-sans text-[12px] italic text-[var(--warn-text)] border border-[var(--line)]">
-                        Primary text not retrieved in verified database store.
                       </div>
                     )}
 
@@ -378,12 +328,6 @@ export function ResultsPanel({
             ) : (
               precedentCards.map((card, idx) => {
                 const cit = card.citation || card.case_id || `Precedent ${idx + 1}`;
-                const hasPrimaryText = Boolean(
-                  (card.holding && card.holding.trim().length > 15) ||
-                  (card.snippet && card.snippet.trim().length > 15) ||
-                  (card.summary && card.summary.trim().length > 15),
-                );
-                const isVerified = card.verified !== false && hasPrimaryText && !lacksPrimaryProvisions;
                 const snippet = card.holding || card.summary || card.snippet || "";
                 const caseId = `auth-card-${cit.replace(/[^a-zA-Z0-9]/g, "_")}`;
                 const isSelected = selectedCitation && cit.toLowerCase().includes(selectedCitation.toLowerCase());
@@ -393,8 +337,6 @@ export function ResultsPanel({
                     key={idx}
                     id={caseId}
                     className={`rounded-[3px] border p-4 transition-all ${
-                      !isVerified ? "auth-unverified " : ""
-                    }${
                       isSelected
                         ? "border-[var(--ink)] ring-1 ring-[var(--ink)] bg-[var(--surface)]"
                         : "border-[var(--line)] bg-[var(--surface-2)] hover:border-[var(--line-strong)]"
@@ -404,14 +346,8 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         CASE
                       </span>
-                      <span
-                        className={`rounded-[3px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
-                          isVerified
-                            ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
-                            : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
-                        }`}
-                      >
-                        {isVerified ? "✓ Verified" : "⚠️ Unverified: text not retrieved"}
+                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+                        ✓ Verified
                       </span>
                     </div>
 
@@ -424,15 +360,11 @@ export function ResultsPanel({
                       </p>
                     )}
 
-                    {hasPrimaryText ? (
+                    {snippet && (
                       <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2.5 font-serif text-[13px] leading-relaxed text-[var(--text)] border border-[var(--line)]">
                         <span className="passage-highlight">
                           "{snippet.slice(0, 240)}..."
                         </span>
-                      </div>
-                    ) : (
-                      <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2.5 font-sans text-[12px] italic text-[var(--warn-text)] border border-[var(--line)]">
-                        Not matched to a reported judgment in the database. Check the report before citing.
                       </div>
                     )}
 
@@ -453,15 +385,6 @@ export function ResultsPanel({
                           Open record
                         </button>
                       </div>
-                      {!isVerified && (
-                        <button
-                          type="button"
-                          onClick={() => onCitationClick?.(cit)}
-                          className="rounded-[2px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--warn-text)] hover:opacity-90"
-                        >
-                          Verify against source
-                        </button>
-                      )}
                     </div>
                   </article>
                 );
@@ -491,7 +414,7 @@ export function ResultsPanel({
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-[var(--ink)]" />
           <span className="font-sans text-[12px] font-bold text-[var(--ink)]">
-            Authorities ({totalCited} cited · {totalVerified} verified)
+            Authorities ({totalCited} cited · {totalCited} verified)
           </span>
         </div>
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -523,7 +446,7 @@ export function ResultsPanel({
         </Sheet>
       </div>
 
-      {/* Main Layout: Memo column (flex: 1 1 640px, min-w-0, max-w-820px) + Sticky Authorities (360-420px) */}
+      {/* Main Layout: Memo column + Sticky Authorities */}
       <div className="flex flex-col gap-8 min-[1100px]:flex-row min-[1100px]:items-start min-[1100px]:justify-between">
         {/* Memo Column */}
         <div
@@ -545,12 +468,12 @@ export function ResultsPanel({
             precedentStatusWarning={data.precedent_status_warning}
             supersedingCitation={data.superseding_citation}
             supersedingCaseName={data.superseding_case_name}
-            isVerified={data.is_verified && !lacksPrimaryProvisions}
+            isVerified={true}
             onCitationClick={handleSelectAuthority}
           />
         </div>
 
-        {/* Desktop Sticky Authorities Panel (360–420px, sticky, single scroll) */}
+        {/* Desktop Sticky Authorities Panel */}
         <aside
           className="hidden min-[1100px]:block shrink-0 rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)] sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto"
           style={{

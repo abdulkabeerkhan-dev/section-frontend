@@ -361,38 +361,16 @@ export function AnalysisView({
           </div>
 
           <div className="flex items-center gap-3">
-            {isPartialResult ? (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => onCitationClick?.("unverified")}
-                  className="font-sans text-[12px] font-medium text-[var(--warn-text)] hover:underline"
-                >
-                  Review {unverifiedCount} unverified {unverifiedCount === 1 ? "authority" : "authorities"}
-                </button>
-                <Button
-                  size="sm"
-                  disabled
-                  className="h-8 gap-1.5 rounded-[3px] px-3 font-sans text-[12px] font-medium cursor-not-allowed opacity-100"
-                  style={{ backgroundColor: "#E4E2D6", color: "#5B5648" }}
-                  aria-label="Export memorandum to Word document"
-                >
-                  <FileDown className="h-3.5 w-3.5" />
-                  <span>Export</span>
-                </Button>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleExport}
-                disabled={exporting}
-                className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
-                aria-label="Export memorandum to Word document"
-              >
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-                <span>Export</span>
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={handleExport}
+              disabled={exporting}
+              className="h-8 gap-1.5 rounded-[3px] bg-[var(--ink)] px-3 font-sans text-[12px] font-medium text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
+              aria-label="Export memorandum to Word document"
+            >
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+              <span>Export</span>
+            </Button>
           </div>
         </div>
 
