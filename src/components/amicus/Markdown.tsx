@@ -65,22 +65,32 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function buildCitationMatcher(cases: CaseResult[] | undefined): CitationMatcher | null {
-  if (!cases || cases.length === 0) return null;
+const PAK_CITATION_PATTERN =
+  "(?:(?:19|20)\\d{2}\\s+(?:SCMR|PLD|CLD|YLR|MLD|CLC|PCrLJ|PTD|PLC|GBLR)\\s+\\d+|PLD\\s+(?:19|20)\\d{2}\\s+(?:SC|Lahore|Karachi|Peshawar|Quetta|Islamabad)\\s+\\d+)";
+
+function buildCitationMatcher(cases: CaseResult[] | undefined): CitationMatcher {
   const map = new Map<string, CaseResult>();
-  for (const c of cases) {
-    for (const raw of [c.citation, c.case_id]) {
-      const key = raw?.trim();
-      if (key && key.length >= 3) {
-        map.set(key.toLowerCase(), c);
+  if (cases && cases.length > 0) {
+    for (const c of cases) {
+      for (const raw of [c.citation, c.case_id]) {
+        const key = raw?.trim();
+        if (key && key.length >= 3) {
+          map.set(key.toLowerCase(), c);
+          map.set(key.toLowerCase().replace(/_/g, " "), c);
+          map.set(key.toLowerCase().replace(/\s+/g, " "), c);
+        }
       }
     }
   }
-  if (map.size === 0) return null;
   const keys = Array.from(map.keys())
     .sort((a, b) => b.length - a.length)
     .map(escapeRegex);
-  return { regex: new RegExp(`(${keys.join("|")})`, "gi"), map };
+
+  const pattern = keys.length > 0
+    ? `(${keys.join("|")}|\\b${PAK_CITATION_PATTERN}\\b)`
+    : `(\\b${PAK_CITATION_PATTERN}\\b)`;
+
+  return { regex: new RegExp(pattern, "gi"), map };
 }
 
 const QUOTE_RE = /[“"]([^“”"]{8,400})[”"]/g;
@@ -124,12 +134,39 @@ function renderStringWithCitations(text: string, matcher: CitationMatcher): Reac
     const start = match.index;
     const end = start + match[0].length;
     if (start > lastIndex) out.push(renderQuotedText(text.slice(lastIndex, start), `s${start}`));
-    const data = matcher.map.get(match[0].toLowerCase());
-    if (data) {
-      out.push(<CitationLink key={`cite-${start}-${key++}`} text={match[0]} data={data} />);
-    } else {
-      out.push(match[0]);
-    }
+    const cleanMatchKey = match[0].toLowerCase().trim().replace(/_/g, " ").replace(/\s+/g, " ");
+    const data = matcher.map.get(match[0].toLowerCase()) || matcher.map.get(cleanMatchKey);
+    const fallbackItem: CaseResult = {
+      title: "Reported Judicial Precedent",
+      citation: match[0],
+      court: match[0].toUpperCase().includes("SC") || match[0].toUpperCase().includes("SCMR") ? "Supreme Court of Pakistan" : "Superior Court",
+      year: parseInt(match[0].match(/\b(19\d{2}|20\d{2})\b/)?.[1] || "2020", 10),
+      summary: "Judicial authority cited in research memorandum.",
+      relevance: "high",
+      verified: false,
+      score: 1.0,
+      source_url: "",
+      case_id: match[0],
+      preview: "",
+      outcome: "",
+      parties: "",
+      holding: "",
+      relied_on: "",
+      author_judges: [],
+      bench_type: "",
+      statutes: [],
+      sections: [],
+    };
+    const itemData: CaseResult = data ?? fallbackItem;
+    const isUnverified = !data || itemData.verified === false || itemData.is_verified === false;
+    out.push(
+      <CitationLink
+        key={`cite-${start}-${key++}`}
+        text={match[0]}
+        data={itemData}
+        unverified={isUnverified}
+      />
+    );
     lastIndex = end;
     if (matcher.regex.lastIndex === start) matcher.regex.lastIndex += 1;
   }

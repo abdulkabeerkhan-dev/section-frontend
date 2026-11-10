@@ -112,11 +112,23 @@ export interface PrecedentCard {
   snippet?: string;
 }
 
+export interface StatuteAuthority {
+  id?: string;
+  canonical_id?: string;
+  citation: string;
+  title: string;
+  act_title?: string;
+  snippet?: string;
+  in_force?: boolean;
+  verified?: boolean;
+}
+
 export interface GenerateResponse {
   issues: string[];
   cases: CaseResult[];
   /** Structured precedent cards; preferred over `cases` when present. */
   precedent_cards: PrecedentCard[];
+  statutes?: StatuteAuthority[];
   document_text: string | null;
   doc_id: string | null;
   mode: BackendMode | null;
@@ -876,10 +888,55 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     };
   });
 
+  // If cases is empty or missing details, populate from precedent_cards so Markdown inline citations match
+  const resolvedCases: CaseResult[] = (cases.length > 0 && typeof caseSource[0] === 'object' && asString((caseSource[0] as Record<string, unknown>).title))
+    ? cases
+    : precedent_cards.map((pc) => ({
+        title: pc.case_title || pc.title || pc.case_name || "Precedent on Record",
+        citation: pc.citation,
+        court: pc.court || "",
+        year: pc.year || 0,
+        summary: pc.holding || pc.summary || pc.snippet || "",
+        relevance: "high" as const,
+        source_url: pc.source_url || "",
+        case_id: pc.case_id || pc.citation,
+        score: 1.0,
+        preview: pc.snippet || pc.holding || "",
+        outcome: pc.outcome || "",
+        parties: "",
+        holding: pc.holding || pc.ratio_decidendi || "",
+        relied_on: "",
+        author_judges: [],
+        bench_type: "",
+        statutes: pc.statutes_invoked?.map((s) => s.name) || [],
+        sections: pc.statutes_invoked?.map((s) => s.name) || [],
+        verified: pc.verified_source === true || pc.is_verified === true,
+      }));
+
+  // Extract statutory authorities from backend payload or evidence pack
+  const rawStatutes = Array.isArray(rec.statutes) ? (rec.statutes as unknown[]) : [];
+  const epItems = (rec.evidence_pack && typeof rec.evidence_pack === "object" ? ((rec.evidence_pack as Record<string, unknown>).items as unknown) : null);
+  const epStatutes = epItems && typeof epItems === "object"
+    ? Object.values(epItems as Record<string, Record<string, unknown>>).filter((it) => it && (it.item_type === "statutory_provision" || it.type === "statute"))
+    : [];
+
+  const statutesSource = rawStatutes.length > 0 ? rawStatutes : epStatutes;
+  const statutes: StatuteAuthority[] = (statutesSource as Record<string, unknown>[]).map((s) => ({
+    id: asString(s.id) ?? asString(s.canonical_id) ?? asString(s.citation) ?? "",
+    canonical_id: asString(s.canonical_id) ?? asString(s.id) ?? asString(s.citation) ?? "",
+    citation: asString(s.citation) ?? asString(s.canonical_id) ?? "Statute",
+    title: asString(s.title) ?? asString(s.provision_title) ?? asString(s.citation) ?? "Statutory Provision",
+    act_title: asString(s.act_title) ?? asString(s.statute) ?? "",
+    snippet: asString(s.snippet) ?? asString(s.text_cleaned) ?? asString(s.text) ?? "",
+    in_force: s.in_force !== false,
+    verified: s.verified !== false,
+  }));
+
   return {
     issues,
-    cases,
+    cases: resolvedCases,
     precedent_cards,
+    statutes,
     document_text: asString(p.answer) ?? asString(p.document_text),
     doc_id: asString(p.doc_id) ?? asString(p.query_id),
     mode,

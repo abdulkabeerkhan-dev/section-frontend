@@ -49,15 +49,85 @@ export function ResultsPanel({
   const [authoritiesTab, setAuthoritiesTab] = useState<"statutes" | "cases" | "notes">("cases");
   const [copiedCite, setCopiedCite] = useState<string | null>(null);
 
-  // Split authorities into cases and statutes
-  const cases = useMemo(
-    () => precedentCards.filter((c) => !c.citation?.toLowerCase().includes("sec") && !c.case_title?.toLowerCase().includes("section")),
-    [precedentCards],
-  );
-  const statutes = useMemo(
-    () => precedentCards.filter((c) => c.citation?.toLowerCase().includes("sec") || c.case_title?.toLowerCase().includes("section")),
-    [precedentCards],
-  );
+  const [selectedCitation, setSelectedCitation] = useState<string | null>(null);
+
+  // Unified authorities for cases
+  const cases = useMemo(() => {
+    return (data.cases && data.cases.length > 0) ? data.cases : precedentCards.map((c) => ({
+      title: c.case_title || c.title || c.case_name || "Precedent on Record",
+      citation: c.citation,
+      court: c.court || "",
+      year: c.year || 0,
+      summary: c.holding || c.summary || c.snippet || "",
+      relevance: "high" as const,
+      case_id: c.case_id,
+      preview: c.snippet || c.holding || "",
+      verified: c.verified !== false,
+      score: 1.0,
+      holding: c.holding || c.ratio_decidendi || "",
+      sections: c.statutes_invoked?.map((s) => s.name) || [],
+      statutes: c.statutes_invoked?.map((s) => s.name) || [],
+      source_url: c.source_url || '',
+      outcome: c.outcome || '',
+      parties: '',
+      relied_on: '',
+      author_judges: [],
+      bench_type: '',
+    }));
+  }, [data.cases, precedentCards]);
+
+  // Unified authorities for statutes
+  const statutes = useMemo(() => {
+    if (Array.isArray(data.statutes) && data.statutes.length > 0) {
+      return data.statutes.map((s) => ({
+        citation: s.citation || s.canonical_id || "Statutory Provision",
+        title: s.title || s.citation,
+        act_title: s.act_title || "",
+        snippet: s.snippet || "",
+        verified: s.verified !== false,
+        in_force: s.in_force !== false,
+        canonical_id: s.canonical_id || s.id || "",
+      }));
+    }
+    // Fallback: extract from precedent cards statutes_invoked
+    const fromInvoked = precedentCards.flatMap((c) => c.statutes_invoked || []).map((s) => ({
+      citation: s.name,
+      title: s.name,
+      act_title: "",
+      snippet: s.explanation || "",
+      verified: true,
+      in_force: true,
+      canonical_id: "",
+    }));
+    if (fromInvoked.length > 0) return fromInvoked;
+
+    return precedentCards
+      .filter((c) => c.citation?.toLowerCase().includes("sec") || c.case_title?.toLowerCase().includes("section"))
+      .map((c) => ({
+        citation: c.citation,
+        title: c.case_title || c.title || c.citation,
+        act_title: "",
+        snippet: c.holding || c.summary || "",
+        verified: c.verified !== false,
+        in_force: true,
+        canonical_id: c.case_id || "",
+      }));
+  }, [data.statutes, precedentCards]);
+
+  function handleSelectAuthority(cit: string) {
+    setSelectedCitation(cit);
+    const isStat = statutes.some((s) => s.citation.toLowerCase().includes(cit.toLowerCase()) || cit.toLowerCase().includes(s.citation.toLowerCase()));
+    if (isStat) {
+      setAuthoritiesTab("statutes");
+    } else {
+      setAuthoritiesTab("cases");
+    }
+    setTimeout(() => {
+      const id = `auth-card-${cit.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 50);
+  }
 
   function copyCite(cit: string) {
     navigator.clipboard.writeText(cit);
@@ -108,7 +178,7 @@ export function ResultsPanel({
           <AnalysisView
             issues={data.issues}
             text={data.document_text}
-            citations={data.cases}
+            citations={cases}
             jobId={data.job_id ?? null}
             footer={answerFooter}
             intake={data.mode === "intake"}
@@ -117,7 +187,7 @@ export function ResultsPanel({
             supersedingCitation={data.superseding_citation}
             supersedingCaseName={data.superseding_case_name}
             isVerified={data.is_verified}
-            onCitationClick={onCitationClick}
+            onCitationClick={handleSelectAuthority}
           />
         </div>
 
@@ -264,19 +334,68 @@ export function ResultsPanel({
                     <p className="mt-1 text-[11px]">All controlling provisions are hyperlinked directly within the memo text.</p>
                   </div>
                 ) : (
-                  statutes.map((s, idx) => (
-                    <article key={idx} className="rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-4">
-                      <p className="font-sans text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                        {s.citation}
-                      </p>
-                      <h3 className="mt-1 font-serif text-[15px] font-bold text-[var(--text)]">
-                        {s.case_title || s.title}
-                      </h3>
-                      <p className="mt-2 font-sans text-[12px] text-[var(--text-muted)]">
-                        {s.snippet || s.summary}
-                      </p>
-                    </article>
-                  ))
+                  statutes.map((s, idx) => {
+                    const citId = `auth-card-${s.citation.replace(/[^a-zA-Z0-9]/g, "_")}`;
+                    const isSelected = selectedCitation && s.citation.toLowerCase().includes(selectedCitation.toLowerCase());
+                    return (
+                      <article
+                        key={idx}
+                        id={citId}
+                        className={`rounded-[3px] border p-4 transition-all ${
+                          isSelected ? "border-[var(--ink)] ring-1 ring-[var(--ink)] bg-[var(--surface)]" : "border-[var(--line)] bg-[var(--surface-2)] hover:border-[var(--line-strong)]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            {s.citation}
+                          </span>
+                          <span
+                            className={`rounded-[3px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
+                              s.verified !== false
+                                ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
+                                : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
+                            }`}
+                          >
+                            {s.verified !== false ? "✓ Verified" : "⚠️ Unverified"}
+                          </span>
+                        </div>
+                        <h3 className="mt-1 font-serif text-[15px] font-bold text-[var(--text)]">
+                          {s.title}
+                        </h3>
+                        {s.act_title && (
+                          <p className="mt-0.5 font-sans text-[11px] text-[var(--text-muted)]">
+                            {s.act_title}
+                          </p>
+                        )}
+                        {s.snippet && (
+                          <div className="mt-2.5 rounded-[2px] bg-[var(--surface)] p-2 font-serif text-[13px] leading-relaxed text-[var(--text)] border border-[var(--line)]">
+                            <span className="passage-highlight">
+                              "{s.snippet.slice(0, 240)}..."
+                            </span>
+                          </div>
+                        )}
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line)] pt-2 font-sans text-[11px]">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => copyCite(s.citation)}
+                              className="font-medium text-[var(--ink)] hover:underline"
+                            >
+                              {copiedCite === s.citation ? "Copied" : "Cite as"}
+                            </button>
+                            {s.canonical_id ? (
+                              <a
+                                href={`/statutes`}
+                                className="font-medium text-[var(--text-muted)] hover:text-[var(--ink)]"
+                              >
+                                Open full section
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })
                 )}
               </>
             )}
