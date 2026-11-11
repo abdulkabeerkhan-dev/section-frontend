@@ -1,4 +1,5 @@
 import { backendFetch } from "./backend";
+import { resolvePdfUrl } from "./api";
 
 export const BACKEND_BASE = (
   (typeof process !== "undefined" && (process.env?.["VITE_BACKEND_URL"] || process.env?.["VITE_API_BASE_URL"])) ||
@@ -48,7 +49,7 @@ function list(raw: unknown): Record<string, unknown>[] {
 
 export function judgmentPdfHref(pdf?: string): string | undefined {
   if (!pdf) return undefined;
-  return /^https?:\/\//.test(pdf) ? pdf : `${BACKEND_BASE}${pdf.startsWith("/") ? "" : "/"}${pdf}`;
+  return resolvePdfUrl(pdf, undefined);
 }
 
 function toJudgment(r: Record<string, unknown>): JudgmentResult {

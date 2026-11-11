@@ -95,6 +95,9 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
   const [activeTab, setActiveTab] = useState<string>("ratio");
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfTimedOut, setPdfTimedOut] = useState(false);
+  const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfDirectFallback, setPdfDirectFallback] = useState(false);
   const [pdfRetryKey, setPdfRetryKey] = useState(0);
 
   // Strictly bind to a stable identifier — never the title string.
@@ -129,6 +132,12 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
     card.statutes_invoked && card.statutes_invoked.length > 0
       ? card.statutes_invoked
       : (details?.statutes_invoked || []);
+  const isHeadnoteOnly =
+    card.is_headnote_only === true ||
+    card.content_level === "headnote_only" ||
+    details?.content_level === "headnote_only" ||
+    card.verification_status?.includes("HEADNOTE_ONLY") === true;
+  const isVerifiedSource = card.verified_source === true && !isHeadnoteOnly;
 
   useEffect(() => {
     if (open) {
@@ -138,14 +147,54 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
 
   useEffect(() => {
     if (activeTab !== "pdf" || !activePdfUrl) return;
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+    let timedOut = false;
+    setPdfObjectUrl(null);
+    setPdfError(null);
+    setPdfDirectFallback(false);
     setPdfLoading(true);
     setPdfTimedOut(false);
     const timer = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
       setPdfTimedOut(true);
       setPdfLoading(false);
-      console.warn("[PDF_LOAD_TIMEOUT] Case:", idToFetch, "Url:", activePdfUrl);
+      console.warn("[PDF_LOAD_TIMEOUT] Case:", idToFetch);
     }, 15000);
-    return () => window.clearTimeout(timer);
+
+    void (async () => {
+      try {
+        const response = await fetch(activePdfUrl, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`PDF request failed with HTTP ${response.status}.`);
+        }
+        const blob = await response.blob();
+        const header = await blob.slice(0, 1024).text();
+        if (!header.includes("%PDF-")) {
+          throw new Error("The server response was not a PDF document.");
+        }
+        objectUrl = URL.createObjectURL(blob);
+        setPdfObjectUrl(objectUrl);
+      } catch (err) {
+        if (!timedOut && !controller.signal.aborted) {
+          if (err instanceof TypeError) {
+            setPdfDirectFallback(true);
+          } else {
+            setPdfError(err instanceof Error ? err.message : "The PDF could not be loaded.");
+          }
+        }
+      } finally {
+        window.clearTimeout(timer);
+        if (!timedOut) setPdfLoading(false);
+      }
+    })();
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [activeTab, activePdfUrl, pdfRetryKey, idToFetch]);
 
   // Fetch the complete judgment record every time the drawer opens.
@@ -166,7 +215,11 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
         }
         const data = await getJudgmentDetails(idToFetch, token);
         if (!cancelled) {
-          setFullText(data.full_text || fallbackText);
+          setFullText(
+            data.full_text ||
+              (data.content_level === "headnote_only" ? data.headnote : undefined) ||
+              fallbackText,
+          );
           setDetails(data);
         }
       } catch (err) {
@@ -213,7 +266,8 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
         `STATUTES INVOKED\n${card.statutes_invoked
           .map((s) => `- ${s.name}${s.explanation ? `: ${s.explanation}` : ""}`)
           .join("\n")}`,
-      orderText && `FULL ORDER TEXT\n${orderText}`,
+      orderText &&
+        `${details?.content_level === "headnote_only" || card.content_level === "headnote_only" ? "REPORTER HEADNOTE / SUMMARY — NOT THE FULL JUDGMENT" : "JUDGMENT TEXT"}\n${orderText}`,
     ].filter(Boolean) as string[];
 
     const blob = new Blob([parts.join("\n\n")], { type: "text/plain;charset=utf-8" });
@@ -268,19 +322,21 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium",
-                  card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified"
+                  isVerifiedSource
                     ? "border-gold/40 bg-gold/10 text-gold"
                     : "border-border bg-muted text-muted-foreground",
                 )}
               >
-                {card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified" ? (
+                {isVerifiedSource ? (
                   <ShieldCheck className="h-3 w-3" aria-hidden />
                 ) : (
                   <BookOpen className="h-3 w-3" aria-hidden />
                 )}
-                {card.verified_source && card.verification_status !== "HEADNOTE_ONLY - not verified"
+                {isVerifiedSource
                   ? "Verified Source"
-                  : (card.verification_status?.includes("HEADNOTE_ONLY") ? "Headnote Only (Not Verified)" : "General Reference")}
+                  : isHeadnoteOnly
+                    ? "Headnote Only (Not Verified)"
+                    : "General Reference"}
               </span>
               {activePdfUrl && (
                 <a
@@ -326,10 +382,10 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                 Statutes Invoked
               </TabsTrigger>
               <TabsTrigger value="order" className="text-[12.5px]">
-                Full Order Text
+                Judgment Text
               </TabsTrigger>
               <TabsTrigger value="pdf" className="text-[12.5px]">
-                Official PDF
+                PDF
               </TabsTrigger>
             </TabsList>
           </div>
@@ -391,29 +447,36 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
               {loading && paragraphs.length === 0 ? (
                 <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  <span className="text-[13px]">Loading full judgment text…</span>
+                  <span className="text-[13px]">Loading judgment text…</span>
                 </div>
               ) : error && paragraphs.length === 0 ? (
                 <Empty>{error}</Empty>
               ) : paragraphs.length === 0 ? (
                 <Empty>Full order text is not available for this judgment.</Empty>
               ) : (
-                <ol className="space-y-3">
-                  {paragraphs.map((p, i) => (
-                    <li
-                      key={i}
-                      className="group flex items-start gap-2 rounded-md border border-transparent px-2 py-1.5 transition-colors hover:border-border hover:bg-muted/30"
-                    >
-                      <span className="mt-1 w-6 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
-                        {i + 1}
-                      </span>
-                      <p className="flex-1 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground/90">
-                        {p}
-                      </p>
-                      <CopyIconButton text={p} label={`Copy paragraph ${i + 1}`} />
-                    </li>
-                  ))}
-                </ol>
+                <>
+                  {(details?.content_level === "headnote_only" || card.content_level === "headnote_only") && (
+                    <p className="mb-3 rounded-md border border-border bg-muted/40 p-3 text-[12px] text-muted-foreground">
+                      Reporter headnote / summary only — this is not the full judgment.
+                    </p>
+                  )}
+                  <ol className="space-y-3">
+                    {paragraphs.map((p, i) => (
+                      <li
+                        key={i}
+                        className="group flex items-start gap-2 rounded-md border border-transparent px-2 py-1.5 transition-colors hover:border-border hover:bg-muted/30"
+                      >
+                        <span className="mt-1 w-6 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
+                          {i + 1}
+                        </span>
+                        <p className="flex-1 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground/90">
+                          {p}
+                        </p>
+                        <CopyIconButton text={p} label={`Copy paragraph ${i + 1}`} />
+                      </li>
+                    ))}
+                  </ol>
+                </>
               )}
             </TabsContent>
 
@@ -423,10 +486,10 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3.5">
                     <div className="space-y-0.5">
                       <p className="text-[13px] font-semibold text-foreground">
-                        Authentic Law Reporter Scanned PDF
+                        PDF document
                       </p>
                       <p className="text-[11.5px] text-muted-foreground">
-                        Official publication scan from superior court law reporter (SCMR / PLD / CLC).
+                        The document source and authenticity have not been independently verified.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -450,13 +513,13 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                     </div>
                   </div>
 
-                  {pdfTimedOut ? (
+                  {pdfTimedOut || (pdfError && !pdfDirectFallback) ? (
                     <div className="rounded-md border border-border bg-muted/30 p-6 text-center">
                       <p className="text-[13.5px] font-medium text-foreground">
-                        PDF viewer timed out (15-second response limit reached).
+                        {pdfTimedOut ? "PDF viewer timed out (15-second response limit reached)." : "The PDF could not be loaded."}
                       </p>
                       <p className="mt-1 text-[12.5px] text-muted-foreground">
-                        The court report scan is taking longer than expected to display inline.
+                        {pdfError || "The document is taking longer than expected to display inline."}
                       </p>
                       <div className="mt-4 flex flex-wrap justify-center gap-2.5">
                         <Button
@@ -485,34 +548,47 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                           className="h-8 gap-1.5 text-[12px]"
                         >
                           <FileText className="h-3.5 w-3.5" aria-hidden />
-                          Read Full Order Text
+                          Read Available Judgment Text
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="relative min-h-[28rem] w-full flex-1 overflow-hidden rounded-md border border-border bg-muted/20">
+                      {pdfDirectFallback && (
+                        <p className="border-b border-border bg-muted/40 p-2 text-[12px] text-muted-foreground">
+                          The response could not be verified through fetch; trying the document directly.
+                        </p>
+                      )}
                       {pdfLoading && (
                         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-xs">
                           <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
                           <span className="text-[12.5px] text-muted-foreground">
-                            Loading official court report scan…
+                            Checking PDF response…
                           </span>
                         </div>
                       )}
-                      <iframe
-                        key={`${activePdfUrl}-${pdfRetryKey}`}
-                        src={activePdfUrl}
-                        title="Official judgment PDF"
-                        onLoad={() => setPdfLoading(false)}
-                        className="h-full min-h-[28rem] w-full rounded-md border-0"
-                      />
+                      {pdfDirectFallback ? (
+                        <iframe
+                          key={`${activePdfUrl}-${pdfRetryKey}`}
+                          src={activePdfUrl}
+                          title="Unverified judgment PDF response"
+                          className="h-full min-h-[28rem] w-full rounded-md border-0"
+                        />
+                      ) : pdfObjectUrl ? (
+                        <iframe
+                          key={`${activePdfUrl}-${pdfRetryKey}`}
+                          src={pdfObjectUrl}
+                          title="Judgment PDF"
+                          className="h-full min-h-[28rem] w-full rounded-md border-0"
+                        />
+                      ) : null}
                     </div>
                   )}
                 </>
               ) : (
                 <div className="rounded-md border border-dashed border-border p-6 text-center">
                   <p className="text-[13px] text-muted-foreground">
-                    Official court report PDF is not available in the database for this judgment.
+                    No PDF URL is available for this judgment.
                   </p>
                   <Button
                     type="button"
@@ -522,7 +598,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                     className="mt-3 h-8 gap-1.5 text-[12px] border-primary/40 text-primary hover:bg-primary/10"
                   >
                     <FileText className="h-3.5 w-3.5" aria-hidden />
-                    View Full Order Text
+                    View Available Judgment Text
                   </Button>
                 </div>
               )}

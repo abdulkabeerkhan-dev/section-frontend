@@ -35,7 +35,7 @@ export interface CaseResult {
   verified: boolean;
   verification_status?: string;
   is_verified?: boolean;
-  /** URL to the official judgment PDF, if available. */
+  /** URL to a judgment PDF, if available. */
   pdf_url?: string;
 }
 
@@ -83,7 +83,7 @@ export interface PrecedentCard {
   judgment_id?: string;
   /** Deciding court, if the backend supplies it. */
   court?: string;
-  /** URL to the official judgment PDF, if available. */
+  /** URL to a judgment PDF, if available. */
   pdf_url?: string;
   /** Moving and opposing parties. */
   parties?: CaseParties;
@@ -108,6 +108,10 @@ export interface PrecedentCard {
   verified?: boolean;
   is_verified?: boolean;
   verification_status?: string;
+  /** Source text type, used to distinguish full judgments from reporter headnotes. */
+  content_level?: "full_judgment" | "headnote_only" | "unknown" | string;
+  content_status?: "available" | "unavailable" | string;
+  is_headnote_only?: boolean;
   summary?: string;
   snippet?: string;
 }
@@ -121,6 +125,19 @@ export interface StatuteAuthority {
   snippet?: string;
   in_force?: boolean;
   verified?: boolean;
+}
+
+export interface RetrievalHealthEvent {
+  lane: string;
+  provider: string;
+  status: string;
+  result_count: number;
+  message?: string;
+}
+
+export interface RetrievalHealth {
+  status: string;
+  events: RetrievalHealthEvent[];
 }
 
 export interface GenerateResponse {
@@ -143,6 +160,8 @@ export interface GenerateResponse {
   superseding_case_name?: string;
   /** Layer 7 Verification status */
   is_verified?: boolean;
+  /** Retrieval provider health; degraded results must not be read as no-law findings. */
+  retrieval_health?: RetrievalHealth;
 }
 
 
@@ -253,7 +272,8 @@ function eraPayload(era: JurisprudenceEra | undefined): Record<string, unknown> 
 // Strictly use the live backend URL. No local simulation fallback.
 const BASE_URL =
   (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
-  "https://lawyer-backend-9e7q.onrender.com";
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "https://lawyer-backend-production-5c6d.up.railway.app";
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
 
 function base(): string | undefined {
@@ -268,23 +288,31 @@ export function judgmentPdfUrl(judgmentId: string | undefined | null): string | 
 }
 
 /**
- * Use the backend-provided pdf_url as-is. If it points at an obsolete
- * deployment, rebuild it from the active backend; otherwise fall back to the
- * backend /judgment-pdf/{id} endpoint.
+ * Preserve external storage URLs; only remap the retired backend host.
  */
 export function resolvePdfUrl(
   pdfUrl: string | undefined | null,
   judgmentId: string | undefined | null,
 ): string | undefined {
   const b = base();
-  if (pdfUrl && pdfUrl.startsWith("http")) {
-    if (b && !pdfUrl.startsWith(b)) {
-      try {
-        const u = new URL(pdfUrl);
-        return `${b}${u.pathname}${u.search}`;
-      } catch {
-        return pdfUrl;
+  if (pdfUrl) {
+    if (pdfUrl.startsWith("http")) {
+      if (b) {
+        try {
+          const u = new URL(pdfUrl);
+          const backend = new URL(b);
+          if (u.origin === backend.origin) return pdfUrl;
+          if (u.hostname === "lawyer-backend-9e7q.onrender.com") {
+            return `${b}${u.pathname}${u.search}`;
+          }
+        } catch {
+          return pdfUrl;
+        }
       }
+      return pdfUrl;
+    }
+    if (b) {
+      return `${b}${pdfUrl.startsWith("/") ? "" : "/"}${pdfUrl}`;
     }
     return pdfUrl;
   }
@@ -788,8 +816,8 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
       verified:
         o.verified === true ||
         o.is_verified === true ||
-        asString(o.verified)?.toLowerCase() === "true" ||
-        Boolean(asString(o.source_url) ?? asString(o.url)),
+        o.verified_source === true ||
+        asString(o.verified)?.toLowerCase() === "true",
       pdf_url: resolvePdfUrl(
         asString(o.pdf_url),
         asString(o.judgment_id) ?? asString(o.case_id),
@@ -834,6 +862,8 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
       .filter((s) => s.name);
     const caseId = asString(o.case_id) ?? asString(o.id);
     const judgmentId = asString(o.judgment_id) ?? caseId;
+    const contentLevel = asString(o.content_level) ?? asString(o.content_type) ?? undefined;
+    const verificationStatus = asString(o.verification_status) ?? undefined;
     const rawName =
       asString(o.case_name) ?? asString(o.case_title) ?? asString(o.title) ?? "Untitled case";
     const decisionDate = asString(o.decision_date);
@@ -856,6 +886,16 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
         "",
       outcome: asString(o.outcome) ?? "",
       verified_source: o.verified_source === true,
+      verified: o.verified === true,
+      is_verified: o.is_verified === true,
+      verification_status: verificationStatus,
+      content_level: contentLevel,
+      content_status: asString(o.content_status) ?? undefined,
+      is_headnote_only:
+        o.is_headnote_only === true ||
+        o.is_headnote === true ||
+        contentLevel === "headnote_only" ||
+        verificationStatus?.includes("HEADNOTE_ONLY") === true,
       issue: asString(o.issue) ?? asString(o.legal_issue) ?? asString(o.question) ?? "",
       holding: asString(o.ratio_decidendi) ?? asString(o.holding) ?? asString(o.summary) ?? asString(o.preview) ?? asString(o.snippet) ?? "",
       why_relevant: asString(o.why_relevant) ?? asString(o.relevance_reason) ?? asString(o.relevance) ?? "",
@@ -929,8 +969,35 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     act_title: asString(s.act_title) ?? asString(s.statute) ?? "",
     snippet: asString(s.snippet) ?? asString(s.text_cleaned) ?? asString(s.text) ?? "",
     in_force: s.in_force !== false,
-    verified: s.verified !== false,
+    verified: s.verified === true,
   }));
+
+  const healthRaw = rec.retrieval_health;
+  const healthObject =
+    healthRaw && typeof healthRaw === "object"
+      ? (healthRaw as Record<string, unknown>)
+      : null;
+  const retrieval_health = healthObject
+    ? {
+        status: asString(healthObject.status) ?? "unknown",
+        events: Array.isArray(healthObject.events)
+          ? healthObject.events.map((event) => {
+              const value =
+                event && typeof event === "object"
+                  ? (event as Record<string, unknown>)
+                  : {};
+              const count = Number(value.result_count);
+              return {
+                lane: asString(value.lane) ?? "unknown",
+                provider: asString(value.provider) ?? "unknown",
+                status: asString(value.status) ?? "unknown",
+                result_count: Number.isFinite(count) ? count : 0,
+                message: asString(value.message) ?? undefined,
+              };
+            })
+          : [],
+      }
+    : undefined;
 
   return {
     issues,
@@ -956,11 +1023,15 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
         p.answer.includes('UNVERIFIED NOTICE') ||
         p.answer.includes('issues unresolved')
       )),
+    retrieval_health,
   };
 }
 
 export interface JudgmentDetails {
   full_text: string;
+  headnote?: string;
+  content_level?: "full_judgment" | "headnote_only" | "unknown" | string;
+  content_status?: "available" | "unavailable" | string;
   holding?: string;
   ratio_decidendi?: string;
   legal_issue?: string;
@@ -1030,6 +1101,9 @@ export async function getJudgmentDetails(caseId: string, token?: string): Promis
 
   return {
     full_text: text,
+    headnote: asString(d.headnote) ?? undefined,
+    content_level: asString(d.content_level) ?? asString(d.content_type) ?? undefined,
+    content_status: asString(d.content_status) ?? undefined,
     holding: holding ?? undefined,
     ratio_decidendi: holding ?? undefined,
     legal_issue: issue ?? undefined,
@@ -1324,4 +1398,3 @@ function sanitizeResponse(res: GenerateResponse): GenerateResponse {
     document_text: res.document_text,
   };
 }
-

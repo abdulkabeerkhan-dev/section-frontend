@@ -98,7 +98,7 @@ export function ResultsPanel({
           relevance: "high" as const,
           case_id: c.case_id,
           preview: c.snippet || c.holding || "",
-          verified: true,
+          verified: c.verified === true || c.is_verified === true || c.verified_source === true,
           score: 1.0,
           holding: c.holding || c.ratio_decidendi || "",
           sections: c.statutes_invoked?.map((s) => s.name) || [],
@@ -120,8 +120,8 @@ export function ResultsPanel({
         title: s.title || s.citation,
         act_title: s.act_title || "",
         snippet: s.snippet || "",
-        verified: true,
-        in_force: s.in_force !== false,
+        verified: s.verified === true,
+        in_force: s.in_force === true,
         canonical_id: s.canonical_id || s.id || "",
       }));
     }
@@ -131,8 +131,8 @@ export function ResultsPanel({
       title: s.name,
       act_title: "",
       snippet: s.explanation || "",
-      verified: true,
-      in_force: true,
+      verified: false,
+      in_force: false,
       canonical_id: "",
     }));
     if (fromInvoked.length > 0) return fromInvoked;
@@ -144,8 +144,8 @@ export function ResultsPanel({
         title: c.case_title || c.title || c.citation,
         act_title: "",
         snippet: c.holding || c.summary || "",
-        verified: true,
-        in_force: true,
+        verified: false,
+        in_force: false,
         canonical_id: c.case_id || "",
       }));
   }, [data.statutes, precedentCards]);
@@ -154,13 +154,35 @@ export function ResultsPanel({
   const verifiedStatutes = statutes.filter((s) => s.verified).length;
   const verifiedCases = precedentCards.filter(
     (c) =>
-      c.verified !== false &&
-      c.is_verified !== false &&
+      (c.verified === true || c.is_verified === true || c.verified_source === true) &&
       c.verification_status !== "HEADNOTE_ONLY - not verified" &&
-      !c.is_headnote_only &&
-      c.verified_source !== false,
+      c.is_headnote_only !== true &&
+      c.content_level !== "headnote_only",
   ).length;
   const totalVerified = verifiedStatutes + verifiedCases;
+  const degradedEvents = (data.retrieval_health?.events ?? []).filter((event) =>
+    ["ERROR", "PROVIDER_DOWN", "TIMEOUT"].includes(event.status),
+  );
+  const degradedProviders = Array.from(
+    new Set(degradedEvents.map((event) => event.provider).filter((provider) => provider !== "unknown")),
+  );
+  const retrievalHealthNotice =
+    data.retrieval_health?.status === "degraded" || degradedEvents.length > 0 ? (
+      <div
+        role="status"
+        className="mb-4 rounded-md border border-gold/40 bg-gold/10 px-4 py-3 text-[13px] text-foreground"
+      >
+        <p className="font-semibold">Research sources degraded</p>
+        <p className="mt-1">
+          Some search sources did not respond. Results may be incomplete; a missing result does not mean that no governing law or authority exists.
+        </p>
+        {degradedProviders.length > 0 && (
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Affected sources: {degradedProviders.join(", ")}.
+          </p>
+        )}
+      </div>
+    ) : null;
 
   function handleSelectAuthority(cit: string) {
     setSelectedCitation(cit);
@@ -190,6 +212,7 @@ export function ResultsPanel({
   if (isDraft) {
     return (
       <div className="w-full">
+        {retrievalHealthNotice}
         <div className="mb-6 flex items-center justify-between border-b border-[var(--line)] pb-3">
           <div className="flex items-center gap-3">
             <span className="rounded-[3px] border border-[var(--ink)] bg-transparent px-2.5 py-0.5 font-sans text-[11px] font-bold tracking-wider text-[var(--ink)] uppercase">
@@ -284,8 +307,12 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         STATUTE
                       </span>
-                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-                        ✓ Verified
+                      <span className={`rounded-[3px] border px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
+                        s.verified
+                          ? "border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
+                          : "border-[#E3C578] bg-[#FDF8EA] text-[#8C6D1F]"
+                      }`}>
+                        {s.verified ? "✓ Verified" : "Not verified"}
                       </span>
                     </div>
 
@@ -345,11 +372,10 @@ export function ResultsPanel({
                 const caseId = `auth-card-${cit.replace(/[^a-zA-Z0-9]/g, "_")}`;
                 const isSelected = selectedCitation && cit.toLowerCase().includes(selectedCitation.toLowerCase());
                 const isCaseVerified =
-                  card.verified !== false &&
-                  card.is_verified !== false &&
+                  (card.verified === true || card.is_verified === true || card.verified_source === true) &&
                   card.verification_status !== "HEADNOTE_ONLY - not verified" &&
-                  !card.is_headnote_only &&
-                  card.verified_source !== false;
+                  card.is_headnote_only !== true &&
+                  card.content_level !== "headnote_only";
 
                 return (
                   <article
@@ -395,7 +421,9 @@ export function ResultsPanel({
 
                     {!isCaseVerified && (
                       <div className="mt-2 rounded-[2px] border border-[#E3C578] bg-[#FDF8EA] p-2 font-sans text-[11px] leading-relaxed text-[#8C6D1F]">
-                        Not matched to a reported full judgment in the database. Check the report before citing.
+                        {card.is_headnote_only || card.content_level === "headnote_only"
+                          ? "Reporter headnote / summary only — not the full judgment. Check the report before citing."
+                          : "Not matched to a reported full judgment in the database. Check the report before citing."}
                       </div>
                     )}
 
@@ -443,12 +471,13 @@ export function ResultsPanel({
   // Jurist Mode
   return (
     <div className="w-full">
+      {retrievalHealthNotice}
       {/* Below 1100px: Authorities Drawer Button */}
       <div className="mb-4 min-[1100px]:hidden flex items-center justify-between rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-3">
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-[var(--ink)]" />
           <span className="font-sans text-[12px] font-bold text-[var(--ink)]">
-            Authorities ({totalCited} cited · {totalCited} verified)
+            Authorities ({totalCited} cited · {totalVerified} verified)
           </span>
         </div>
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -502,7 +531,7 @@ export function ResultsPanel({
             precedentStatusWarning={data.precedent_status_warning}
             supersedingCitation={data.superseding_citation}
             supersedingCaseName={data.superseding_case_name}
-            isVerified={true}
+            isVerified={data.is_verified === true}
             onCitationClick={handleSelectAuthority}
           />
         </div>

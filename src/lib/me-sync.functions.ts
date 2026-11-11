@@ -39,7 +39,7 @@ export const syncCurrentUser = createServerFn({ method: "POST" })
       (typeof import.meta !== "undefined" && import.meta.env
         ? (import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL)
         : "") ||
-      "https://lawyer-backend-9e7q.onrender.com"
+      "https://lawyer-backend-production-5c6d.up.railway.app"
     ).replace(/\/$/, "");
 
     let authorization = getRequest().headers.get("authorization");
