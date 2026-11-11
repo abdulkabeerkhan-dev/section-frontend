@@ -132,51 +132,15 @@ interface KeyFacts {
   delay: KeyFactItem;
 }
 
-function inferKeyFacts(text: string): KeyFacts {
-  const lower = text.toLowerCase();
-  if (lower.includes("banking court") || lower.includes("financial institutions") || lower.includes("fio")) {
-    return {
-      forum: { value: "High Court", citation: "FIO 2001 §22" },
-      timeLimit: { value: "30 days (from date of order)", citation: "FIO 2001 §22(1)" },
-      delay: { value: "Condonation", citation: "Limitation Act 1908 §5" },
-    };
-  } else if (lower.includes("rent") || lower.includes("tenant") || lower.includes("landlord")) {
-    return {
-      forum: { value: "District Judge / High Court", citation: "Punjab Rented Premises Act §24" },
-      timeLimit: { value: "30 days", citation: "Section 24" },
-      delay: { value: "Eviction order becomes final", citation: "Section 24(2)" },
-    };
-  } else if (lower.includes("489-f") || lower.includes("cheque") || lower.includes("dishonour")) {
-    return {
-      forum: { value: "Court of Session / High Court", citation: "CrPC 1898 §497 / §561-A" },
-      timeLimit: { value: "No statutory limitation (Criminal)", citation: "CrPC 1898" },
-      delay: { value: "Unexplained delay damages prosecution", citation: "1995 SCMR 1350" },
-    };
-  } else if (lower.includes("bail")) {
-    return {
-      forum: { value: "Court of Session / High Court", citation: "CrPC 1898 §497 / §498" },
-      timeLimit: { value: "Immediate (Liberty matter)", citation: "CrPC 1898 §497" },
-      delay: { value: "Pre-trial incarceration risk", citation: "PLD 2023 SC 450" },
-    };
-  } else if (lower.includes("specific performance") || lower.includes("agreement to sell")) {
-    return {
-      forum: { value: "Civil Court (Senior Civil Judge)", citation: "Civil Courts Ord 1962" },
-      timeLimit: { value: "3 years (from date fixed for performance)", citation: "Limitation Act Art 113" },
-      delay: { value: "Right to relief extinguishes", citation: "Limitation Act §3" },
-    };
-  } else if (lower.includes("succession") || lower.includes("letter of administration")) {
-    return {
-      forum: { value: "District Judge / NADRA", citation: "Succession Act 1925 / NADRA Act 2021" },
-      timeLimit: { value: "No period of limitation", citation: "PLD 2018 SC 342" },
-      delay: { value: "Third party adverse alienation risk", citation: "Succession Act §372" },
-    };
-  }
-
-  return {
-    forum: { value: "Not established in retrieved sources" },
-    timeLimit: { value: "Not established in retrieved sources" },
-    delay: { value: "Not established in retrieved sources" },
-  };
+/**
+ * Key-fact cards must come from sourced backend data, never from keyword
+ * guessing over memo text. The previous heuristic matched substrings
+ * (e.g. "rent" inside "current") and stamped hard-coded forums, deadlines and
+ * unverified citations onto unrelated memos. Until the backend returns
+ * structured, verified key facts, render no cards.
+ */
+function inferKeyFacts(_text: string): KeyFacts | null {
+  return null;
 }
 
 /** Generates a concise issue title for H1 and RE line (max 90 characters) */
@@ -466,6 +430,7 @@ export function AnalysisView({
         )}
 
         {/* Three key-fact cards: auto-fit minmax(170px, 1fr), line-height 1.3, letter-spacing 0.08em */}
+        {keyFacts && (
         <div
           className="my-6 grid gap-3"
           style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}
@@ -530,6 +495,7 @@ export function AnalysisView({
             )}
           </div>
         </div>
+        )}
 
         {/* Legal issues identified */}
         {issues && issues.length > 0 && (
