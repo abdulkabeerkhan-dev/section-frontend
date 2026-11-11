@@ -196,6 +196,27 @@ function recordToTurn(r: ActivityRecord): Turn {
   };
 }
 
+function getLocalActivityRecords(): ActivityRecord[] {
+  try {
+    const raw = localStorage.getItem("section_local_activity");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalActivityRecord(rec: ActivityRecord): void {
+  try {
+    const current = getLocalActivityRecords();
+    const updated = [rec, ...current.filter((r) => r.id !== rec.id && r.thread_id !== rec.thread_id)].slice(0, 60);
+    localStorage.setItem("section_local_activity", JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
 export function QueryWorkspace() {
   const assistant = useAssistant();
   const queryClient = useQueryClient();
@@ -234,6 +255,22 @@ export function QueryWorkspace() {
     setSeed({ text, nonce: Date.now() });
   }
 
+  // Consume any incoming handoff context from another assistant (e.g. AnalysisView -> Counsel)
+  useEffect(() => {
+    try {
+      const handoff = sessionStorage.getItem("section_counsel_handoff");
+      if (handoff) {
+        sessionStorage.removeItem("section_counsel_handoff");
+        const parsed = JSON.parse(handoff);
+        if (parsed?.prompt) {
+          seedComposer(parsed.prompt);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [assistant.id]);
+
   const { data: quota } = useQuery({
     queryKey: ["userQuota"],
     enabled: isLoaded && isSignedIn && isApiConfigured(),
@@ -255,10 +292,26 @@ export function QueryWorkspace() {
     retry: 1,
   });
 
+  const allRecords = useMemo(() => {
+    const serverList = records ?? [];
+    const localList = getLocalActivityRecords();
+    const seen = new Set<string>();
+    const merged: ActivityRecord[] = [];
+    for (const r of [...serverList, ...localList]) {
+      if (!r || !r.thread_id) continue;
+      const key = `${r.thread_id}-${r.question}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(r);
+      }
+    }
+    return merged;
+  }, [records]);
+
   // Group activity rows into threads (oldest -> newest within a thread).
   const threads = useMemo(() => {
     const map = new Map<string, ActivityRecord[]>();
-    for (const r of records ?? []) {
+    for (const r of allRecords) {
       if (!r || !r.thread_id) continue;
       const arr = map.get(r.thread_id) ?? [];
       arr.push(r);
@@ -283,7 +336,7 @@ export function QueryWorkspace() {
 
   const activeTurns = useMemo(() => {
     if (!activeThreadId) return [];
-    const rows = (records ?? [])
+    const rows = allRecords
       .filter((r) => r && r.thread_id === activeThreadId)
       .sort((a, b) => (a?.created_at || "").localeCompare(b?.created_at || ""));
     const persisted = rows.map(recordToTurn);
@@ -435,6 +488,16 @@ export function QueryWorkspace() {
       queryClient.invalidateQueries({ queryKey: ["userQuota"] });
 
       try {
+        const localRec: ActivityRecord = {
+          id: `local-${crypto.randomUUID()}`,
+          thread_id: threadId,
+          mode,
+          question: q,
+          response: response as unknown as Record<string, unknown>,
+          created_at: new Date().toISOString(),
+          category: "general",
+        };
+        saveLocalActivityRecord(localRec);
         await logActivity({
           data: {
             threadId,
@@ -712,11 +775,7 @@ export function QueryWorkspace() {
                   <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
                     ✓ Verified Record
                   </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--warn-text)]">
-                    ▲ Partial record · Authorities unverified
-                  </span>
-                )}
+                ) : null}
               </div>
             </header>
             <Conversation className="flex-1">

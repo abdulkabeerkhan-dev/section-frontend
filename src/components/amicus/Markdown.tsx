@@ -28,6 +28,9 @@ const MEMORANDUM_SECTIONS = new Set([
   "applicable law",
   "analysis",
   "recommended next steps",
+  "unaddressed points & source limitations",
+  "unaddressed points",
+  "evidentiary questions for counsel",
 ]);
 
 function textContent(node: ReactNode): string {

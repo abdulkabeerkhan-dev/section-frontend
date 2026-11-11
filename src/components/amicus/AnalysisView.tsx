@@ -249,6 +249,10 @@ export function AnalysisView({
 
   const raw = parsedOutput.content;
   const { shortAnswer, remainingText } = useMemo(() => extractShortAnswer(raw), [raw]);
+  const formattedRemainingText = useMemo(() => {
+    if (!remainingText) return "";
+    return remainingText.replace(/([^\n])\n(#{1,4}\s)/g, "$1\n\n$2");
+  }, [remainingText]);
   const keyFacts = useMemo(() => inferKeyFacts(raw), [raw]);
 
   // Meaningful result title (max 90 characters) for H1 and RE line
@@ -549,7 +553,7 @@ export function AnalysisView({
         {/* Remaining Body Text Rendered Cleanly via Markdown */}
         <article className="memo-body mt-6">
           <Markdown citations={citations} memorandum>
-            {remainingText}
+            {formattedRemainingText}
           </Markdown>
         </article>
 
@@ -570,7 +574,19 @@ export function AnalysisView({
               asChild
               className="rounded-[3px] bg-[var(--ink)] text-[var(--on-ink)] hover:bg-[var(--ink-2)] px-4 py-2"
             >
-              <Link to="/assistants/mike" className="inline-flex items-center gap-2">
+              <Link
+                to="/assistants/mike"
+                onClick={() => {
+                  try {
+                    const memo = raw || text || "";
+                    const prompt = `Draft court-ready pleadings (plaint / petition / written statement) based on the following verified research memorandum:\n\n${memo.trim()}`;
+                    sessionStorage.setItem("section_counsel_handoff", JSON.stringify({ prompt }));
+                  } catch {
+                    // ignore
+                  }
+                }}
+                className="inline-flex items-center gap-2"
+              >
                 <span>Hand Off to Counsel</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
