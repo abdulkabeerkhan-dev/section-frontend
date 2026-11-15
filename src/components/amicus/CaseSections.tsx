@@ -148,11 +148,17 @@ function CaseSectionCard({
                 {court}
               </span>
             )}
-            {data?.verified && !data?.verification_status?.includes("HEADNOTE_ONLY") && (
+            {data?.content_level === "headnote" ||
+            data?.content_level === "headnote_only" ||
+            data?.verification_status?.includes("HEADNOTE_ONLY") ? (
+              <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                Headnote Only - Full judgment not available
+              </span>
+            ) : data?.verified && !data?.verification_status?.includes("HEADNOTE_ONLY") ? (
               <span className="inline-flex items-center gap-1 rounded border border-gold/40 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
                 Verified source
               </span>
-            )}
+            ) : null}
           </span>
         </span>
         <ChevronDown

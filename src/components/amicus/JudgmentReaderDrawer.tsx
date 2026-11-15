@@ -135,9 +135,13 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
   const isHeadnoteOnly =
     card.is_headnote_only === true ||
     card.content_level === "headnote_only" ||
+    card.content_level === "headnote" ||
     details?.content_level === "headnote_only" ||
+    details?.content_level === "headnote" ||
     card.verification_status?.includes("HEADNOTE_ONLY") === true;
-  const isVerifiedSource = card.verified_source === true && !isHeadnoteOnly;
+  const isVerifiedSource =
+    (card.verified_source === true || card.verified === true || card.is_verified === true) &&
+    !isHeadnoteOnly;
 
   useEffect(() => {
     if (open) {
@@ -351,7 +355,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                 {isVerifiedSource
                   ? "Verified Source"
                   : isHeadnoteOnly
-                    ? "Reported Precedent"
+                    ? "Headnote Only - Full judgment not available"
                     : "General Reference"}
               </span>
               {activePdfUrl && (

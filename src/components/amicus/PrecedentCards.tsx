@@ -32,7 +32,17 @@ export function PrecedentCardItem({
   const displayTitle = card.case_name || cleanTitle(card.case_title || card.title || "Title unavailable");
   const judgmentId = card.judgment_id || card.case_id || "";
 
-  const isVerified = card.verified !== false && card.verification_status !== "HEADNOTE_ONLY - not verified";
+  const isHeadnote =
+    card.is_headnote_only === true ||
+    card.content_level === "headnote_only" ||
+    card.content_level === "headnote" ||
+    card.verification_status === "HEADNOTE_ONLY - not verified" ||
+    card.verification_status?.includes("HEADNOTE_ONLY");
+
+  const isVerified =
+    !isHeadnote &&
+    card.verified !== false &&
+    (card.verified === true || card.is_verified === true || card.verified_source === true);
 
   function handleCopyCite() {
     const cit = citation || displayTitle;
@@ -57,10 +67,16 @@ export function PrecedentCardItem({
           )}
         </div>
 
-        {/* Verified badge */}
-        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-          ✓ Verified
-        </span>
+        {/* Verified or Headnote Only badge */}
+        {isHeadnote ? (
+          <span className="rounded-[3px] border border-amber-300 bg-amber-50 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wider text-amber-800">
+            Headnote Only - Full judgment not available
+          </span>
+        ) : isVerified ? (
+          <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+            ✓ Verified
+          </span>
+        ) : null}
       </div>
 
       {citation && displayTitle !== citation && (

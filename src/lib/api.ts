@@ -814,10 +814,13 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
       statutes: asStringList(o.statutes ?? o.statute),
       sections: asStringList(o.sections ?? o.section),
       verified:
-        o.verified === true ||
-        o.is_verified === true ||
-        o.verified_source === true ||
-        asString(o.verified)?.toLowerCase() === "true",
+        (o.verified === true ||
+          o.is_verified === true ||
+          o.verified_source === true ||
+          asString(o.verified)?.toLowerCase() === "true") &&
+        o.content_level !== "headnote" &&
+        o.content_level !== "headnote_only" &&
+        !asString(o.verification_status)?.includes("HEADNOTE_ONLY"),
       pdf_url: resolvePdfUrl(
         asString(o.pdf_url),
         asString(o.judgment_id) ?? asString(o.case_id),
@@ -885,9 +888,21 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
         decisionDate ??
         "",
       outcome: asString(o.outcome) ?? "",
-      verified_source: o.verified_source === true,
-      verified: o.verified === true,
-      is_verified: o.is_verified === true,
+      verified_source:
+        o.verified_source === true &&
+        contentLevel !== "headnote" &&
+        contentLevel !== "headnote_only" &&
+        !verificationStatus?.includes("HEADNOTE_ONLY"),
+      verified:
+        o.verified === true &&
+        contentLevel !== "headnote" &&
+        contentLevel !== "headnote_only" &&
+        !verificationStatus?.includes("HEADNOTE_ONLY"),
+      is_verified:
+        o.is_verified === true &&
+        contentLevel !== "headnote" &&
+        contentLevel !== "headnote_only" &&
+        !verificationStatus?.includes("HEADNOTE_ONLY"),
       verification_status: verificationStatus,
       content_level: contentLevel,
       content_status: asString(o.content_status) ?? undefined,
@@ -895,6 +910,7 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
         o.is_headnote_only === true ||
         o.is_headnote === true ||
         contentLevel === "headnote_only" ||
+        contentLevel === "headnote" ||
         verificationStatus?.includes("HEADNOTE_ONLY") === true,
       issue: asString(o.issue) ?? asString(o.legal_issue) ?? asString(o.question) ?? "",
       holding: asString(o.ratio_decidendi) ?? asString(o.holding) ?? asString(o.summary) ?? asString(o.preview) ?? asString(o.snippet) ?? "",

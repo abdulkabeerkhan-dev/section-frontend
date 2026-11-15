@@ -156,8 +156,10 @@ export function ResultsPanel({
     (c) =>
       (c.verified === true || c.is_verified === true || c.verified_source === true) &&
       c.verification_status !== "HEADNOTE_ONLY - not verified" &&
+      !c.verification_status?.includes("HEADNOTE_ONLY") &&
       c.is_headnote_only !== true &&
-      c.content_level !== "headnote_only",
+      c.content_level !== "headnote_only" &&
+      c.content_level !== "headnote",
   ).length;
   const totalVerified = verifiedStatutes + verifiedCases;
   const degradedEvents = (data.retrieval_health?.events ?? []).filter((event) =>
@@ -371,11 +373,16 @@ export function ResultsPanel({
                 const snippet = card.holding || card.summary || card.snippet || "";
                 const caseId = `auth-card-${cit.replace(/[^a-zA-Z0-9]/g, "_")}`;
                 const isSelected = selectedCitation && cit.toLowerCase().includes(selectedCitation.toLowerCase());
+                const isHeadnote =
+                  card.is_headnote_only === true ||
+                  card.content_level === "headnote_only" ||
+                  card.content_level === "headnote" ||
+                  card.verification_status === "HEADNOTE_ONLY - not verified" ||
+                  card.verification_status?.includes("HEADNOTE_ONLY");
+
                 const isCaseVerified =
-                  (card.verified === true || card.is_verified === true || card.verified_source === true) &&
-                  card.verification_status !== "HEADNOTE_ONLY - not verified" &&
-                  card.is_headnote_only !== true &&
-                  card.content_level !== "headnote_only";
+                  !isHeadnote &&
+                  (card.verified === true || card.is_verified === true || card.verified_source === true);
 
                 return (
                   <article
@@ -391,9 +398,15 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         CASE
                       </span>
-                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-                        ✓ Verified
-                      </span>
+                      {isHeadnote ? (
+                        <span className="rounded-[3px] border border-amber-300 bg-amber-50 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wider text-amber-800">
+                          Headnote Only - Full judgment not available
+                        </span>
+                      ) : isCaseVerified ? (
+                        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+                          ✓ Verified
+                        </span>
+                      ) : null}
                     </div>
 
                     <h3 className="mt-1.5 font-serif text-[15px] font-bold leading-snug text-[var(--text)]">
