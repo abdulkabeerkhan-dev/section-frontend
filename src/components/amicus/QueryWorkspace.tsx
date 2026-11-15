@@ -269,7 +269,7 @@ export function QueryWorkspace() {
     } catch {
       // ignore
     }
-  }, [assistant.id]);
+  }, [assistant]);
 
   const { data: quota } = useQuery({
     queryKey: ["userQuota"],
