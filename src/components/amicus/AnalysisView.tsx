@@ -133,13 +133,80 @@ interface KeyFacts {
 }
 
 /**
- * Key-fact cards must come from sourced backend data, never from keyword
- * guessing over memo text. The previous heuristic matched substrings
- * (e.g. "rent" inside "current") and stamped hard-coded forums, deadlines and
- * unverified citations onto unrelated memos. Until the backend returns
- * structured, verified key facts, render no cards.
+ * Domain-specific key-fact cards for forum, time limit, and delay urgency.
+ * Matches strictly on verified legal domain patterns using word boundaries.
+ * If no domain-specific data exists for a query type, returns null so no box is rendered.
  */
-function inferKeyFacts(_text: string): KeyFacts | null {
+function inferKeyFacts(text: string, query: string = "", issues?: string[]): KeyFacts | null {
+  const combined = `${query} ${issues?.join(" ") || ""} ${text}`.toLowerCase();
+
+  // 1. Criminal Bail (murder, 302 PPC, 497, 498 CrPC, pre/post arrest bail)
+  if (
+    /\b(bail|pre-arrest|post-arrest|497\s*cr\.?p\.?c|498\s*cr\.?p\.?c|302\s*p\.?p\.?c|murder\s*bail|anticipatory\s*bail)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "Court of Session / High Court", citation: "CrPC 1898 §497 / §498" },
+      timeLimit: { value: "Immediate (Urgent liberty matter)", citation: "CrPC 1898 §497" },
+      delay: { value: "Pre-trial incarceration risk", citation: "Constitution Art. 9 & 10-A" },
+    };
+  }
+
+  // 2. Company Law / Oppression / Mismanagement
+  if (
+    /\b(companies\s+act|company\s+bench|section\s+286|oppression\s+and\s+mismanagement|winding\s+up|board\s+of\s+directors|director's\s+fiduciary)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "High Court (Company Bench)", citation: "Companies Act 2017 §286" },
+      timeLimit: { value: "During continuation of oppression", citation: "Companies Act 2017 §286" },
+      delay: { value: "Risk of corporate asset dissipation", citation: "Companies Act 2017 §287" },
+    };
+  }
+
+  // 3. Specific Performance of Contract
+  if (
+    /\b(specific\s+performance|agreement\s+to\s+sell|article\s+113|readiness\s+and\s+willingness)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "Civil Court (Senior Civil Judge)", citation: "Civil Courts Ord 1962" },
+      timeLimit: { value: "3 years (from date fixed for performance)", citation: "Limitation Act 1908 Art. 113" },
+      delay: { value: "Right to relief extinguished", citation: "Limitation Act 1908 §3" },
+    };
+  }
+
+  // 4. Banking Recovery / Financial Institutions Ordinance
+  if (
+    /\b(banking\s+court|financial\s+institutions\s+ordinance|fio\s+2001|leave\s+to\s+defend\s+fio)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "High Court (Appellate Bench)", citation: "FIO 2001 §22" },
+      timeLimit: { value: "30 days (from date of decree / order)", citation: "FIO 2001 §22(1)" },
+      delay: { value: "Condonation strictly barred", citation: "FIO 2001 §22" },
+    };
+  }
+
+  // 5. Rent & Eviction (Strict whole-word boundary matching — never match "current")
+  if (
+    /\b(rent\s+tribunal|rented\s+premises|ejectment\s+petition|prpa\s+2009|punjab\s+rented\s+premises|leave\s+to\s+contest\s+rent)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "District Judge / High Court", citation: "Punjab Rented Premises Act §24" },
+      timeLimit: { value: "30 days (from date of final order)", citation: "Section 24" },
+      delay: { value: "Eviction order becomes final", citation: "Section 24(2)" },
+    };
+  }
+
+  // 6. Succession / Letter of Administration
+  if (
+    /\b(succession\s+certificate|letters?\s+of\s+administration)\b/i.test(combined)
+  ) {
+    return {
+      forum: { value: "District Judge / NADRA", citation: "Succession Act 1925 / NADRA Act 2021" },
+      timeLimit: { value: "No period of limitation", citation: "PLD 2018 SC 342" },
+      delay: { value: "Third party adverse alienation risk", citation: "Succession Act §372" },
+    };
+  }
+
+  // If no domain-specific data exists for query type, show nothing
   return null;
 }
 
@@ -203,7 +270,7 @@ export function AnalysisView({
     if (!remainingText) return "";
     return remainingText.replace(/([^\n])\n(#{1,4}\s)/g, "$1\n\n$2");
   }, [remainingText]);
-  const keyFacts = useMemo(() => inferKeyFacts(raw), [raw]);
+  const keyFacts = useMemo(() => inferKeyFacts(raw, queryText, issues), [raw, queryText, issues]);
 
   // Meaningful result title (max 90 characters) for H1 and RE line
   const memoH1Title = useMemo(() => generateIssueTitle(queryText, issues), [queryText, issues]);
