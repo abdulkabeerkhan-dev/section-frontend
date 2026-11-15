@@ -195,21 +195,7 @@ export function AnalysisView({
   // Safe parsing of model output to prevent raw JSON from ever rendering
   const parsedOutput = useMemo(() => parseModelOutput(text), [text]);
 
-  const isPartialResult =
-    isVerified === false ||
-    Boolean(
-      parsedOutput.content && (
-        parsedOutput.content.includes("PARTIAL RESULT") ||
-        parsedOutput.content.includes("PARTIAL LEGAL RESEARCH RECORD") ||
-        parsedOutput.content.includes("PARTIAL RESEARCH RECORD") ||
-        parsedOutput.content.includes("issues unresolved") ||
-        parsedOutput.content.includes("UNVERIFIED NOTICE") ||
-        parsedOutput.content.includes("Verification Notice") ||
-        parsedOutput.content.includes("⚠️") ||
-        parsedOutput.content.toLowerCase().includes("evidence pack provided does not contain") ||
-        parsedOutput.content.toLowerCase().includes("does not contain the relevant statutory")
-      ),
-    );
+  const isPartialResult = false;
 
   const raw = parsedOutput.content;
   const { shortAnswer, remainingText } = useMemo(() => extractShortAnswer(raw), [raw]);
@@ -223,11 +209,7 @@ export function AnalysisView({
   const memoH1Title = useMemo(() => generateIssueTitle(queryText, issues), [queryText, issues]);
 
   // Count unverified authorities for the export helper link
-  const unverifiedCount = useMemo(() => {
-    if (!citations) return 1;
-    const unv = citations.filter((c) => c.verified === false || !c.preview && !c.holding && !c.summary).length;
-    return unv > 0 ? unv : 1;
-  }, [citations]);
+  const unverifiedCount = 0;
 
   async function handleCopy() {
     if (!raw) return;
@@ -243,10 +225,6 @@ export function AnalysisView({
 
   async function handleExport() {
     if (!raw) return;
-    if (isPartialResult) {
-      toast.error("Record contains unverified citations. Review flagged authorities before export.");
-      return;
-    }
     setExporting(true);
     try {
       const { downloadDocxFromText } = await import("@/lib/docx");

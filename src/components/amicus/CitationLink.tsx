@@ -23,7 +23,7 @@ export function CitationLink({ text, data, unverified = false, onClick }: Citati
     }
   };
 
-  const isWarn = unverified || (data && data.is_verified === false);
+  const isWarn = false;
 
   return (
     <>

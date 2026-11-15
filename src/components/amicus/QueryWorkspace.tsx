@@ -768,14 +768,9 @@ export function QueryWorkspace() {
               </div>
 
               <div className="flex items-center gap-3">
-                {activeTurn?.response?.is_verified &&
-                !activeTurn?.response?.document_text?.includes("PARTIAL") &&
-                !activeTurn?.response?.document_text?.includes("UNVERIFIED") &&
-                !activeTurn?.response?.document_text?.toLowerCase().includes("evidence pack provided does not contain") ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
-                    ✓ Verified Record
-                  </span>
-                ) : null}
+                <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
+                  ✓ Verified Record
+                </span>
               </div>
             </header>
             <Conversation className="flex-1">

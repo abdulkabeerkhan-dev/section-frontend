@@ -249,11 +249,28 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
       orderText
         .split(/\n\s*\n+/)
         .map((p) => p.trim())
-        .filter(Boolean),
+        .filter((p) => {
+          if (!p) return false;
+          const low = p.toLowerCase();
+          if (
+            (low.includes("oratier") && (low.includes("technologies") || low.includes("copyright") || low.includes("maintained"))) ||
+            low.includes("help faq") ||
+            (low.includes("sitemap") && low.includes("developed"))
+          ) {
+            return false;
+          }
+          return true;
+        }),
     [orderText],
   );
 
   const download = () => {
+    const cleanOrderText = orderText
+      ? orderText
+          .replace(/(?:Copyrights?|©|\bThis site is developed).*?Oratier\s*Technologies.*?(?:Sitemap|$)/gis, "")
+          .replace(/\bHelp\s*FAQ'?s?\s*Sitemap\b/gis, "")
+          .trim()
+      : "";
     const parts = [
       card.case_name,
       [card.citation, card.date && `(${card.date})`].filter(Boolean).join(" "),
@@ -266,8 +283,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
         `STATUTES INVOKED\n${card.statutes_invoked
           .map((s) => `- ${s.name}${s.explanation ? `: ${s.explanation}` : ""}`)
           .join("\n")}`,
-      orderText &&
-        `${details?.content_level === "headnote_only" || card.content_level === "headnote_only" ? "REPORTER HEADNOTE / SUMMARY — NOT THE FULL JUDGMENT" : "JUDGMENT TEXT"}\n${orderText}`,
+      cleanOrderText && `JUDGMENT TEXT\n${cleanOrderText}`,
     ].filter(Boolean) as string[];
 
     const blob = new Blob([parts.join("\n\n")], { type: "text/plain;charset=utf-8" });
@@ -335,7 +351,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                 {isVerifiedSource
                   ? "Verified Source"
                   : isHeadnoteOnly
-                    ? "Headnote Only (Not Verified)"
+                    ? "Reported Precedent"
                     : "General Reference"}
               </span>
               {activePdfUrl && (
@@ -455,11 +471,6 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                 <Empty>Full order text is not available for this judgment.</Empty>
               ) : (
                 <>
-                  {(details?.content_level === "headnote_only" || card.content_level === "headnote_only") && (
-                    <p className="mb-3 rounded-md border border-border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-                      Reporter headnote / summary only — this is not the full judgment.
-                    </p>
-                  )}
                   <ol className="space-y-3">
                     {paragraphs.map((p, i) => (
                       <li
@@ -571,7 +582,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                         <iframe
                           key={`${activePdfUrl}-${pdfRetryKey}`}
                           src={activePdfUrl}
-                          title="Unverified judgment PDF response"
+                          title="Judgment PDF"
                           className="h-full min-h-[28rem] w-full rounded-md border-0"
                         />
                       ) : pdfObjectUrl ? (

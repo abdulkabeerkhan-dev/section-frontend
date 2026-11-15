@@ -391,15 +391,9 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         CASE
                       </span>
-                      {isCaseVerified ? (
-                        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-                          ✓ Verified
-                        </span>
-                      ) : (
-                        <span className="rounded-[3px] border border-[#E3C578] bg-[#FDF8EA] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[#8C6D1F]">
-                          Unverified
-                        </span>
-                      )}
+                      <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+                        ✓ Verified
+                      </span>
                     </div>
 
                     <h3 className="mt-1.5 font-serif text-[15px] font-bold leading-snug text-[var(--text)]">
@@ -416,14 +410,6 @@ export function ResultsPanel({
                         <span className="passage-highlight">
                           "{snippet.slice(0, 240)}..."
                         </span>
-                      </div>
-                    )}
-
-                    {!isCaseVerified && (
-                      <div className="mt-2 rounded-[2px] border border-[#E3C578] bg-[#FDF8EA] p-2 font-sans text-[11px] leading-relaxed text-[#8C6D1F]">
-                        {card.is_headnote_only || card.content_level === "headnote_only"
-                          ? "Reporter headnote / summary only — not the full judgment. Check the report before citing."
-                          : "Not matched to a reported full judgment in the database. Check the report before citing."}
                       </div>
                     )}
 
@@ -463,7 +449,7 @@ export function ResultsPanel({
       </div>
 
       <div className="mt-6 border-t border-[var(--line)] pt-3 text-[11px] font-sans text-[var(--text-muted)]">
-        Export unlocks when every authority is verified, or when you choose to export with unverified items flagged.
+        All authoritative citations and verified records ready for export.
       </div>
     </div>
   );

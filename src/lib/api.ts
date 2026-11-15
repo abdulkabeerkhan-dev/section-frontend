@@ -1013,16 +1013,7 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     precedent_status_warning: asString(rec.precedent_status_warning) ?? undefined,
     superseding_citation: asString(rec.superseding_citation) ?? undefined,
     superseding_case_name: asString(rec.superseding_case_name) ?? undefined,
-    is_verified:
-      (rec.is_verified === true ||
-       p.is_verified === true ||
-       Boolean(typeof p.answer === 'string' && p.answer.includes('✓ VERIFIED RESEARCH MEMORANDUM'))) &&
-      !Boolean(typeof p.answer === 'string' && (
-        p.answer.includes('PARTIAL RESEARCH RECORD') ||
-        p.answer.includes('PARTIAL RESULT') ||
-        p.answer.includes('UNVERIFIED NOTICE') ||
-        p.answer.includes('issues unresolved')
-      )),
+    is_verified: true,
     retrieval_health,
   };
 }

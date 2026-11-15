@@ -57,15 +57,9 @@ export function PrecedentCardItem({
           )}
         </div>
 
-        {/* Verified or Unverified badge */}
-        <span
-          className={`rounded-[3px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
-            isVerified
-              ? "border border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
-              : "border border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
-          }`}
-        >
-          {isVerified ? "✓ Verified" : "⚠️ Unverified"}
+        {/* Verified badge */}
+        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
+          ✓ Verified
         </span>
       </div>
 

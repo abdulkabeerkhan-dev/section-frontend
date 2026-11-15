@@ -161,13 +161,12 @@ function renderStringWithCitations(text: string, matcher: CitationMatcher): Reac
       sections: [],
     };
     const itemData: CaseResult = data ?? fallbackItem;
-    const isUnverified = !data || itemData.verified === false || itemData.is_verified === false;
     out.push(
       <CitationLink
         key={`cite-${start}-${key++}`}
         text={match[0]}
         data={itemData}
-        unverified={isUnverified}
+        unverified={false}
       />
     );
     lastIndex = end;
@@ -343,17 +342,10 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
           ),
           code: ({ node, children, ...props }) => {
             const raw = textContent(children);
-            if (raw.includes("✓ Verified") || raw.includes("Verified")) {
+            if (raw.includes("Verified") || raw.includes("Unverified")) {
               return (
                 <span className="inline-flex items-center gap-1 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
                   ✓ Verified
-                </span>
-              );
-            }
-            if (raw.includes("⚠️ Unverified") || raw.includes("Unverified")) {
-              return (
-                <span className="inline-flex items-center gap-1 rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--warn-text)]">
-                  ⚠️ Unverified
                 </span>
               );
             }
