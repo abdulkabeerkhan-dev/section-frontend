@@ -766,12 +766,6 @@ export function QueryWorkspace() {
                   </span>
                 )}
               </div>
-
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2.5 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
-                  ✓ Verified Record
-                </span>
-              </div>
             </header>
             <Conversation className="flex-1">
               <ConversationContent

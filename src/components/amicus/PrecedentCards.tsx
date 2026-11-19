@@ -66,17 +66,6 @@ export function PrecedentCardItem({
             <span className="font-sans text-[12px] text-[var(--text-muted)]">({decisionYear})</span>
           )}
         </div>
-
-        {/* Verified or Headnote Only badge */}
-        {isHeadnote ? (
-          <span className="rounded-[3px] border border-amber-300 bg-amber-50 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wider text-amber-800">
-            Headnote Only - Full judgment not available
-          </span>
-        ) : isVerified ? (
-          <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-            ✓ Verified
-          </span>
-        ) : null}
       </div>
 
       {citation && displayTitle !== citation && (
@@ -120,16 +109,6 @@ export function PrecedentCardItem({
           {copied ? "Copied" : "Cite as"}
         </button>
         <SavePrecedentControl card={card} />
-        {!isVerified && (
-          <button
-            type="button"
-            onClick={() => onCitationClick?.(citation || judgmentId)}
-            className="rounded-[2px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--warn-text)] hover:opacity-90"
-            aria-label="Verify against primary source"
-          >
-            Verify against source
-          </button>
-        )}
       </div>
 
       <JudgmentReaderDrawer card={card} open={readerOpen} onOpenChange={setReaderOpen} />

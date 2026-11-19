@@ -339,25 +339,6 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
                   {card.outcome}
                 </span>
               )}
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium",
-                  isVerifiedSource
-                    ? "border-gold/40 bg-gold/10 text-gold"
-                    : "border-border bg-muted text-muted-foreground",
-                )}
-              >
-                {isVerifiedSource ? (
-                  <ShieldCheck className="h-3 w-3" aria-hidden />
-                ) : (
-                  <BookOpen className="h-3 w-3" aria-hidden />
-                )}
-                {isVerifiedSource
-                  ? "Verified Source"
-                  : isHeadnoteOnly
-                    ? "Headnote Only - Full judgment not available"
-                    : "General Reference"}
-              </span>
               {activePdfUrl && (
                 <a
                   href={activePdfUrl}

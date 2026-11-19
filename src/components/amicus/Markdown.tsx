@@ -343,11 +343,7 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
           code: ({ node, children, ...props }) => {
             const raw = textContent(children);
             if (raw.includes("Verified") || raw.includes("Unverified")) {
-              return (
-                <span className="inline-flex items-center gap-1 rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--ok-text)]">
-                  ✓ Verified
-                </span>
-              );
+              return null;
             }
             return (
               <code
@@ -390,7 +386,11 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
         {children
           .replace(/^(#{1,6})(?=\S)/gm, "$1 ")
           .replace(/^(\s*(?:#{1,6}\s+|>\s*)?)[⚠✅✔❌📄⚖🔒][\uFE0E\uFE0F]?\s*/gm, "$1")
-          .replace(/deterministically evaluated/gi, "verified against authentic statutory text")}
+          .replace(/^>\s*(?:\*\*)?(?:✓\s*)?VERIFIED RESEARCH MEMORANDUM[^\n]*\n?/gim, "")
+          .replace(/^>\s*(?:\*\*)?(?:⚠️\s*)?PARTIAL RESEARCH RECORD[^\n]*\n?/gim, "")
+          .replace(/`✓ Verified`/g, "")
+          .replace(/`⚠️ Unverified`/g, "")
+          .replace(/deterministically evaluated/gi, "evaluated against authentic statutory text")}
       </ReactMarkdown>
     </div>
   );

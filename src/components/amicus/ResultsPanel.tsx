@@ -239,7 +239,7 @@ export function ResultsPanel({
           AUTHORITIES
         </p>
         <h2 className="mt-0.5 font-serif text-[18px] font-bold text-[var(--ink)]">
-          {totalCited} cited · {totalVerified} verified
+          {totalCited} cited
         </h2>
       </div>
 
@@ -308,13 +308,6 @@ export function ResultsPanel({
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         STATUTE
-                      </span>
-                      <span className={`rounded-[3px] border px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider ${
-                        s.verified
-                          ? "border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok-text)]"
-                          : "border-[#E3C578] bg-[#FDF8EA] text-[#8C6D1F]"
-                      }`}>
-                        {s.verified ? "✓ Verified" : "Not verified"}
                       </span>
                     </div>
 
@@ -398,15 +391,6 @@ export function ResultsPanel({
                       <span className="font-sans text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         CASE
                       </span>
-                      {isHeadnote ? (
-                        <span className="rounded-[3px] border border-amber-300 bg-amber-50 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wider text-amber-800">
-                          Headnote Only - Full judgment not available
-                        </span>
-                      ) : isCaseVerified ? (
-                        <span className="rounded-[3px] border border-[var(--ok-border)] bg-[var(--ok-bg)] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[var(--ok-text)]">
-                          ✓ Verified
-                        </span>
-                      ) : null}
                     </div>
 
                     <h3 className="mt-1.5 font-serif text-[15px] font-bold leading-snug text-[var(--text)]">
@@ -476,7 +460,7 @@ export function ResultsPanel({
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-[var(--ink)]" />
           <span className="font-sans text-[12px] font-bold text-[var(--ink)]">
-            Authorities ({totalCited} cited · {totalVerified} verified)
+            Authorities ({totalCited} cited)
           </span>
         </div>
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
