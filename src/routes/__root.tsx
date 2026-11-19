@@ -35,19 +35,17 @@ function NotFoundComponent() {
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", (event) => {
     event.preventDefault();
-    const reloadKey = "vite_preload_last_reload";
-    const last = Number(sessionStorage.getItem(reloadKey) || "0");
-    const now = Date.now();
-    // Allow reload if more than 5 seconds have elapsed to avoid infinite tight loops
-    if (now - last > 5000) {
-      sessionStorage.setItem(reloadKey, String(now));
+    const retryKey = "chunk_retry_attempted";
+    const alreadyRetried = sessionStorage.getItem(retryKey) === "true";
+    if (!alreadyRetried) {
+      sessionStorage.setItem(retryKey, "true");
       if ("caches" in window) {
         caches.keys().then((keys) => {
           keys.forEach((key) => caches.delete(key));
         }).catch(() => {});
       }
       const url = new URL(window.location.href);
-      url.searchParams.set("_v", String(now));
+      url.searchParams.set("_v", String(Date.now()));
       window.location.replace(url.toString());
     }
   });
@@ -74,21 +72,20 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
     errorMessage.includes("Loading chunk") ||
     errorMessage.includes("error loading dynamically imported module");
 
-  // Auto-recover from dynamic module import network failures
+  // Auto-recover from dynamic module import network failures (retry once only to prevent infinite reload loops)
   useEffect(() => {
     if (isChunkLoadError && typeof window !== "undefined") {
-      const reloadKey = "chunk_error_last_reload";
-      const last = Number(sessionStorage.getItem(reloadKey) || "0");
-      const now = Date.now();
-      if (now - last > 5000) {
-        sessionStorage.setItem(reloadKey, String(now));
+      const retryKey = "chunk_retry_attempted";
+      const alreadyRetried = sessionStorage.getItem(retryKey) === "true";
+      if (!alreadyRetried) {
+        sessionStorage.setItem(retryKey, "true");
         if ("caches" in window) {
           caches.keys().then((keys) => {
             keys.forEach((key) => caches.delete(key));
           }).catch(() => {});
         }
         const url = new URL(window.location.href);
-        url.searchParams.set("_v", String(now));
+        url.searchParams.set("_v", String(Date.now()));
         window.location.replace(url.toString());
       }
     }
@@ -96,6 +93,7 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
 
   const handleHardReload = () => {
     try {
+      sessionStorage.removeItem("chunk_retry_attempted");
       sessionStorage.clear();
       if ("caches" in window) {
         caches.keys().then((keys) => {
@@ -267,6 +265,7 @@ function RootComponent() {
 
   useEffect(() => {
     try {
+      sessionStorage.removeItem("chunk_retry_attempted");
       sessionStorage.removeItem("vite_preload_reload");
       const keys = Object.keys(sessionStorage);
       for (const k of keys) {
