@@ -39,7 +39,9 @@ if (typeof window !== "undefined") {
     const count = Number(sessionStorage.getItem(reloadKey) || "0");
     if (count < 2) {
       sessionStorage.setItem(reloadKey, String(count + 1));
-      window.location.reload();
+      const url = new URL(window.location.href);
+      url.searchParams.set("_v", String(Date.now()));
+      window.location.replace(url.toString());
     }
   });
 }
@@ -64,14 +66,17 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
     const isChunkLoadError =
       errorMessage.includes("dynamically imported module") ||
       errorMessage.includes("Failed to fetch") ||
-      errorMessage.includes("Loading chunk");
+      errorMessage.includes("Loading chunk") ||
+      errorMessage.includes("error loading dynamically imported module");
 
     if (isChunkLoadError && typeof window !== "undefined") {
       const reloadKey = "chunk_failed_reload_" + window.location.pathname;
       const count = Number(sessionStorage.getItem(reloadKey) || "0");
       if (count < 2) {
         sessionStorage.setItem(reloadKey, String(count + 1));
-        window.location.reload();
+        const url = new URL(window.location.href);
+        url.searchParams.set("_v", String(Date.now()));
+        window.location.replace(url.toString());
       }
     }
   }, [errorMessage]);
@@ -235,6 +240,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem("vite_preload_reload");
+      const keys = Object.keys(sessionStorage);
+      for (const k of keys) {
+        if (k.startsWith("chunk_failed_reload_")) {
+          sessionStorage.removeItem(k);
+        }
+      }
+    } catch {}
+  }, []);
 
   return (
     <ClerkProvider

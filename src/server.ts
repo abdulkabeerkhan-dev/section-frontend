@@ -48,9 +48,38 @@ async function normalizeCatastrophicSsrResponse(response: Response, request: Req
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      // If a request for a static asset reaches the SSR catch-all, the asset was removed or does not exist.
+      // Return a 404 text response rather than the HTML SPA so browsers and module loaders don't try to parse HTML as JS.
+      if (url.pathname.startsWith("/assets/") || url.pathname.match(/\.(js|css|map|wasm|json|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf)$/i)) {
+        return new Response("Asset not found", {
+          status: 404,
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+          },
+        });
+      }
+
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response, request);
+      const rawResponse = await handler.fetch(request, env, ctx);
+      const response = await normalizeCatastrophicSsrResponse(rawResponse, request);
+
+      // Ensure HTML documents are never cached in browser disk caches across new deployments
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("text/html")) {
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        });
+      }
+
+      return response;
     } catch (error) {
       console.error(error);
       const url = request.url || "";
