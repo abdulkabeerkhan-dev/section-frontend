@@ -35,12 +35,19 @@ function NotFoundComponent() {
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", (event) => {
     event.preventDefault();
-    const reloadKey = "vite_preload_reload";
-    const count = Number(sessionStorage.getItem(reloadKey) || "0");
-    if (count < 2) {
-      sessionStorage.setItem(reloadKey, String(count + 1));
+    const reloadKey = "vite_preload_last_reload";
+    const last = Number(sessionStorage.getItem(reloadKey) || "0");
+    const now = Date.now();
+    // Allow reload if more than 5 seconds have elapsed to avoid infinite tight loops
+    if (now - last > 5000) {
+      sessionStorage.setItem(reloadKey, String(now));
+      if ("caches" in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((key) => caches.delete(key));
+        }).catch(() => {});
+      }
       const url = new URL(window.location.href);
-      url.searchParams.set("_v", String(Date.now()));
+      url.searchParams.set("_v", String(now));
       window.location.replace(url.toString());
     }
   });
@@ -61,35 +68,57 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
 
   const errorStack = error instanceof Error ? error.stack : null;
 
-  // Auto-recover once from dynamic module import network failures
-  useEffect(() => {
-    const isChunkLoadError =
-      errorMessage.includes("dynamically imported module") ||
-      errorMessage.includes("Failed to fetch") ||
-      errorMessage.includes("Loading chunk") ||
-      errorMessage.includes("error loading dynamically imported module");
+  const isChunkLoadError =
+    errorMessage.includes("dynamically imported module") ||
+    errorMessage.includes("Failed to fetch") ||
+    errorMessage.includes("Loading chunk") ||
+    errorMessage.includes("error loading dynamically imported module");
 
+  // Auto-recover from dynamic module import network failures
+  useEffect(() => {
     if (isChunkLoadError && typeof window !== "undefined") {
-      const reloadKey = "chunk_failed_reload_" + window.location.pathname;
-      const count = Number(sessionStorage.getItem(reloadKey) || "0");
-      if (count < 2) {
-        sessionStorage.setItem(reloadKey, String(count + 1));
+      const reloadKey = "chunk_error_last_reload";
+      const last = Number(sessionStorage.getItem(reloadKey) || "0");
+      const now = Date.now();
+      if (now - last > 5000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        if ("caches" in window) {
+          caches.keys().then((keys) => {
+            keys.forEach((key) => caches.delete(key));
+          }).catch(() => {});
+        }
         const url = new URL(window.location.href);
-        url.searchParams.set("_v", String(Date.now()));
+        url.searchParams.set("_v", String(now));
         window.location.replace(url.toString());
       }
     }
-  }, [errorMessage]);
+  }, [errorMessage, isChunkLoadError]);
+
+  const handleHardReload = () => {
+    try {
+      sessionStorage.clear();
+      if ("caches" in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((key) => caches.delete(key));
+        }).catch(() => {});
+      }
+    } catch {}
+    const url = new URL(window.location.href);
+    url.searchParams.set("_v", String(Date.now()));
+    window.location.replace(url.toString());
+  };
 
   return (
     <TooltipProvider>
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            This page didn't load
+            {isChunkLoadError ? "New Version Available" : "This page didn't load"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Something went wrong on our end. You can try refreshing or head back to the workspace.
+            {isChunkLoadError
+              ? "Section was updated. Tap below to reload and fetch the latest version."
+              : "Something went wrong on our end. You can try refreshing or head back to the workspace."}
           </p>
           {errorMessage && (
             <div className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-left">
@@ -108,15 +137,10 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
           )}
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button
-              onClick={() => {
-                try {
-                  sessionStorage.clear();
-                } catch {}
-                window.location.href = window.location.pathname + "?t=" + Date.now();
-              }}
+              onClick={handleHardReload}
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-[13px] font-medium tracking-[0.01em] text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Try again
+              {isChunkLoadError ? "Reload latest version" : "Try again"}
             </button>
             <button
               onClick={() => {
