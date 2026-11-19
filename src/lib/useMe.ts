@@ -115,40 +115,42 @@ export function useMe() {
 
         // Backend may return either the user fields at the top level or wrapped
         // as { status, user: {...} }. Normalize to the inner object.
+        const rawObj = (raw && typeof raw === "object") ? raw : {};
         const dbUser: Record<string, unknown> =
-          raw && typeof raw === "object" && raw.user && typeof raw.user === "object"
-            ? (raw.user as Record<string, unknown>)
-            : (raw && typeof raw === "object" ? raw : {});
+          rawObj.user && typeof rawObj.user === "object"
+            ? (rawObj.user as Record<string, unknown>)
+            : rawObj;
+        const safeDbUser = dbUser || {};
 
         const resolvedFullName =
-          (typeof dbUser.full_name === "string" ? dbUser.full_name : null) ??
-          (typeof dbUser.fullName === "string" ? dbUser.fullName : null) ??
+          (typeof safeDbUser.full_name === "string" ? safeDbUser.full_name : null) ??
+          (typeof safeDbUser.fullName === "string" ? safeDbUser.fullName : null) ??
           fullName ??
           "Advocate";
         const firstName =
-          (typeof dbUser.first_name === "string" ? dbUser.first_name : null) ??
-          (typeof dbUser.firstName === "string" ? dbUser.firstName : null) ??
+          (typeof safeDbUser.first_name === "string" ? safeDbUser.first_name : null) ??
+          (typeof safeDbUser.firstName === "string" ? safeDbUser.firstName : null) ??
           user?.firstName ??
           resolvedFullName.split(" ")[0] ??
           "Advocate";
         const lastName =
-          (typeof dbUser.last_name === "string" ? dbUser.last_name : null) ??
-          (typeof dbUser.lastName === "string" ? dbUser.lastName : null) ??
+          (typeof safeDbUser.last_name === "string" ? safeDbUser.last_name : null) ??
+          (typeof safeDbUser.lastName === "string" ? safeDbUser.lastName : null) ??
           user?.lastName ??
           resolvedFullName.split(" ").slice(1).join(" ") ??
           "";
 
         return {
-          id: (typeof dbUser.id === "string" ? dbUser.id : null) ?? user?.id ?? "",
+          id: (typeof safeDbUser.id === "string" ? safeDbUser.id : null) ?? user?.id ?? "",
           fullName: resolvedFullName,
           firstName,
           lastName,
-          email: (typeof dbUser.email === "string" ? dbUser.email : null) ?? email,
-          status: (typeof dbUser.status === "string" ? dbUser.status : null) ?? "active",
+          email: (typeof safeDbUser.email === "string" ? safeDbUser.email : null) ?? email,
+          status: (typeof safeDbUser.status === "string" ? safeDbUser.status : null) ?? "active",
           isAdmin:
-            Boolean(dbUser.is_admin) ||
-            Boolean(dbUser.isAdmin) ||
-            (dbUser.role as string) === "admin",
+            Boolean(safeDbUser.is_admin) ||
+            Boolean(safeDbUser.isAdmin) ||
+            (safeDbUser.role as string) === "admin",
           needsName: typeof firstName === "string" && firstName.trim().length === 0,
         };
       } catch (err) {

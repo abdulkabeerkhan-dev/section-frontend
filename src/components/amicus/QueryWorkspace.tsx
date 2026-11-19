@@ -185,13 +185,13 @@ function AttachmentPreview({ attachments }: { attachments: ComposerAttachment[] 
 }
 
 function recordToTurn(r: ActivityRecord): Turn {
-  const mode: Mode = r.mode === "draft" ? "draft" : "research";
-  const { docType } = inferIntent(r.question);
+  const mode: Mode = r?.mode === "draft" ? "draft" : "research";
+  const { docType } = inferIntent(r?.question || "");
   return {
-    id: r.id,
-    question: r.question,
+    id: r?.id || "",
+    question: r?.question || "",
     mode,
-    response: r.response as unknown as GenerateResponse,
+    response: (r?.response as unknown as GenerateResponse) || {},
     docType,
   };
 }
@@ -201,7 +201,7 @@ function getLocalActivityRecords(): ActivityRecord[] {
     const raw = localStorage.getItem("section_local_activity");
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
   } catch {
     return [];
   }
@@ -210,7 +210,7 @@ function getLocalActivityRecords(): ActivityRecord[] {
 function saveLocalActivityRecord(rec: ActivityRecord): void {
   try {
     const current = getLocalActivityRecords();
-    const updated = [rec, ...current.filter((r) => r.id !== rec.id && r.thread_id !== rec.thread_id)].slice(0, 60);
+    const updated = [rec, ...current.filter((r) => r && r.id !== rec?.id && r.thread_id !== rec?.thread_id)].slice(0, 60);
     localStorage.setItem("section_local_activity", JSON.stringify(updated));
   } catch {
     // ignore
@@ -706,14 +706,14 @@ export function QueryWorkspace() {
                   </p>
                   {threads.length > 0 ? (
                     <div className="mt-3 space-y-2">
-                      {[...threads].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3).map((t, i) => (
+                      {[...threads].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).slice(0, 3).map((t, i) => (
                         <button
-                          key={t.id}
+                          key={t?.id || i}
                           type="button"
-                          onClick={() => sidebarProps.onSelect(t.id)}
+                          onClick={() => t?.id && sidebarProps.onSelect(t.id)}
                           className="flex w-full items-center justify-between rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-left hover:border-[var(--line-strong)]"
                         >
-                          <span className="truncate font-sans text-[13px] text-[var(--text)]">{t.title}</span>
+                          <span className="truncate font-sans text-[13px] text-[var(--text)]">{t?.title || "Untitled matter"}</span>
                           <span className="ml-2 shrink-0 font-sans text-[11px] text-[var(--text-muted)]">Matter {threads.length - i}</span>
                         </button>
                       ))}
@@ -750,7 +750,7 @@ export function QueryWorkspace() {
                 <span className="text-[var(--text-muted)]">Matters</span>
                 <span className="text-[var(--text-muted)]">/</span>
                 <span className="font-medium text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
-                  {activeTurn?.question || (threads.find((t) => t.id === activeThreadId)?.title) || "Active Matter"}
+                  {activeTurn?.question || (threads.find((t) => t?.id === activeThreadId)?.title) || "Active Matter"}
                 </span>
                 <span className="text-[var(--text-muted)]">/</span>
                 <span className="font-semibold text-[var(--ink)]">
@@ -790,8 +790,9 @@ export function QueryWorkspace() {
                     </span>
                   </div>
                 )}
-                {activeTurns.map((turn) => {
-                  const cont = continuations[turn.id];
+                {activeTurns.map((turn, turnIdx) => {
+                  const turnKey = turn?.id || `turn-${turnIdx}`;
+                  const cont = turn?.id ? continuations[turn.id] : undefined;
                   const response = cont
                     ? {
                         ...turn.response,
@@ -799,9 +800,9 @@ export function QueryWorkspace() {
                         truncated: cont.truncated,
                       }
                     : turn.response;
-                  const jobId = response.job_id;
+                  const jobId = response?.job_id;
                   return (
-                    <div key={turn.id} className="space-y-5">
+                    <div key={turnKey} className="space-y-5">
                       <Message from="user" className="max-w-[85%] gap-2 sm:max-w-[78%]">
                         {turn.attachments && turn.attachments.length > 0 && (
                           <AttachmentPreview attachments={turn.attachments} />

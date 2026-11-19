@@ -24,7 +24,7 @@ export function PrecedentCardItem({
   const [readerOpen, setReaderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const pins = usePins();
-  const pinIndex = pins.findIndex((p) => p.id === pinId(card));
+  const pinIndex = pins.findIndex((p) => p && p.id === pinId(card));
   const citation = card.citation || extractCitation(card.case_name);
   const decisionDate = card.decision_date || card.date || "";
   const decisionYear =

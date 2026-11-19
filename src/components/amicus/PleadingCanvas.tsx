@@ -44,7 +44,7 @@ export function PleadingCanvas() {
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [court, setCourt] = useState(COURTS[1]);
-  const [templateId, setTemplateId] = useState(TEMPLATES[0].id);
+  const [templateId, setTemplateId] = useState(TEMPLATES[0]?.id || "");
   const [title, setTitle] = useState("");
   const [facts, setFacts] = useState("");
   const [busy, setBusy] = useState(false);
@@ -73,7 +73,7 @@ export function PleadingCanvas() {
               petitioner: title.trim(),
               facts: facts.trim(),
             },
-            selected_case_ids: pins.map((p) => p.id),
+            selected_case_ids: pins.filter(Boolean).map((p) => p.id),
             export_format: "docx",
           }),
         });
@@ -88,7 +88,7 @@ export function PleadingCanvas() {
             court_name: court,
             case_title: title.trim(),
             facts: facts.trim(),
-            selected_case_ids: pins.map((p) => p.id),
+            selected_case_ids: pins.filter(Boolean).map((p) => p.id),
           }),
         });
       }
@@ -193,7 +193,7 @@ export function PleadingCanvas() {
                     No authorities pinned. Search cases in Jurist or Counsel and click "Pin to Drafter" to bind precedent into grounds.
                   </p>
                 )}
-                {pins.map((p) => (
+                {pins.filter(Boolean).map((p) => (
                   <span
                     key={p.id}
                     className="inline-flex items-center gap-1.5 rounded-sm border border-authority/30 bg-authority/10 px-2.5 py-1 text-xs font-medium text-foreground"

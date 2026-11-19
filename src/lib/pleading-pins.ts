@@ -27,8 +27,8 @@ export function pinId(card: PrecedentCard): string {
 
 export function togglePin(card: PrecedentCard): "pinned" | "unpinned" | "full" {
   const id = pinId(card);
-  if (pins.some((p) => p.id === id)) {
-    pins = pins.filter((p) => p.id !== id);
+  if (pins.some((p) => p && p.id === id)) {
+    pins = pins.filter((p) => p && p.id !== id);
     emit();
     return "unpinned";
   }
@@ -39,7 +39,7 @@ export function togglePin(card: PrecedentCard): "pinned" | "unpinned" | "full" {
 }
 
 export function unpin(id: string) {
-  pins = pins.filter((p) => p.id !== id);
+  pins = pins.filter((p) => p && p.id !== id);
   emit();
 }
 

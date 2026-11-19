@@ -144,6 +144,7 @@ export function Sidebar({
     const filtered = threads.filter(
       (t) =>
         t &&
+        t.id &&
         withinRange(t.updatedAt, dateRange, customDate) &&
         (q === "" || (t.title || "").toLowerCase().includes(q)),
     );
@@ -301,15 +302,15 @@ export function Sidebar({
             <TooltipProvider delayDuration={400}>
               <ul className="space-y-1">
                 {visibleThreads.map((item, idx) => (
-                  <li key={item.id}>
+                  <li key={item?.id || idx}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           type="button"
-                          onClick={() => onSelect(item.id)}
+                          onClick={() => item?.id && onSelect(item.id)}
                           className={cn(
                             "group flex w-full items-start gap-2 rounded-[3px] border-l-2 px-2.5 py-2 text-left transition-colors focus-visible:outline-none",
-                            activeId === item.id
+                            item && activeId === item.id
                               ? "border-[#F6F2EA] bg-[#262626] text-[#F6F2EA]"
                               : "border-transparent text-[#D0D0CC] hover:bg-[#262626] hover:text-[#F6F2EA]",
                           )}

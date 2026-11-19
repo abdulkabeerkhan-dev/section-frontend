@@ -252,11 +252,11 @@ export const PromptInputProvider = ({
 
   const remove = useCallback((id: string) => {
     setAttachmentFiles((prev) => {
-      const found = prev.find((f) => f.id === id);
+      const found = prev.find((f) => f && f.id === id);
       if (found?.url) {
         URL.revokeObjectURL(found.url);
       }
-      return prev.filter((f) => f.id !== id);
+      return prev.filter((f) => f && f.id !== id);
     });
   }, []);
 
@@ -585,11 +585,11 @@ export const PromptInput = ({
   const removeLocal = useCallback(
     (id: string) =>
       setItems((prev) => {
-        const found = prev.find((file) => file.id === id);
+        const found = prev.find((file) => file && file.id === id);
         if (found?.url) {
           URL.revokeObjectURL(found.url);
         }
-        return prev.filter((file) => file.id !== id);
+        return prev.filter((file) => file && file.id !== id);
       }),
     [],
   );
@@ -765,7 +765,7 @@ export const PromptInput = ({
       add,
       clear: clearAttachments,
       fileInputRef: inputRef,
-      files: files.map((item) => ({ ...item, id: item.id })),
+      files: files.filter(Boolean).map((item) => ({ ...item, id: item.id })),
       openFileDialog,
       remove,
     }),
@@ -780,7 +780,7 @@ export const PromptInput = ({
       },
       clear: clearReferencedSources,
       remove: (id: string) => {
-        setReferencedSources((prev) => prev.filter((s) => s.id !== id));
+        setReferencedSources((prev) => prev.filter((s) => s && s.id !== id));
       },
       sources: referencedSources,
     }),
@@ -935,7 +935,7 @@ export const PromptInputTextarea = ({
       if (e.key === "Backspace" && e.currentTarget.value === "" && attachments.files.length > 0) {
         e.preventDefault();
         const lastAttachment = attachments.files.at(-1);
-        if (lastAttachment) {
+        if (lastAttachment?.id) {
           attachments.remove(lastAttachment.id);
         }
       }
