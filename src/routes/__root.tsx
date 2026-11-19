@@ -31,6 +31,19 @@ function NotFoundComponent() {
   );
 }
 
+// Automatically reload on Vite preload failures (e.g. after a new deployment or on transient network interruption)
+if (typeof window !== "undefined") {
+  window.addEventListener("vite:preloadError", (event) => {
+    event.preventDefault();
+    const reloadKey = "vite_preload_reload";
+    const count = Number(sessionStorage.getItem(reloadKey) || "0");
+    if (count < 2) {
+      sessionStorage.setItem(reloadKey, String(count + 1));
+      window.location.reload();
+    }
+  });
+}
+
 function ErrorComponent({ error }: ErrorComponentProps): any {
   console.error(error);
   useEffect(() => {
@@ -45,6 +58,23 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
         : "An unexpected error occurred.";
 
   const errorStack = error instanceof Error ? error.stack : null;
+
+  // Auto-recover once from dynamic module import network failures
+  useEffect(() => {
+    const isChunkLoadError =
+      errorMessage.includes("dynamically imported module") ||
+      errorMessage.includes("Failed to fetch") ||
+      errorMessage.includes("Loading chunk");
+
+    if (isChunkLoadError && typeof window !== "undefined") {
+      const reloadKey = "chunk_failed_reload_" + window.location.pathname;
+      const count = Number(sessionStorage.getItem(reloadKey) || "0");
+      if (count < 2) {
+        sessionStorage.setItem(reloadKey, String(count + 1));
+        window.location.reload();
+      }
+    }
+  }, [errorMessage]);
 
   return (
     <TooltipProvider>
@@ -74,18 +104,26 @@ function ErrorComponent({ error }: ErrorComponentProps): any {
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button
               onClick={() => {
-                window.location.reload();
+                try {
+                  sessionStorage.clear();
+                } catch {}
+                window.location.href = window.location.pathname + "?t=" + Date.now();
               }}
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-[13px] font-medium tracking-[0.01em] text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Try again
             </button>
-            <a
-              href="/app"
+            <button
+              onClick={() => {
+                try {
+                  sessionStorage.clear();
+                } catch {}
+                window.location.href = "/app?t=" + Date.now();
+              }}
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-[13px] font-medium tracking-[0.01em] text-foreground transition-colors hover:bg-accent"
             >
               Go to workspace
-            </a>
+            </button>
             <button
               onClick={() => {
                 try {
