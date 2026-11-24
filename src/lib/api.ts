@@ -101,7 +101,7 @@ export interface PrecedentCard {
   superseding_case_name?: string;
   /** e.g. "Binding Supreme Court Precedent (Article 189)". */
   authority_strength?: string;
-  /** Retrieval source: Supabase, Pinecone, BM25. */
+  /** Retrieval source: Supabase, Zilliz, BM25. */
   source_type?: string;
   /** Key paragraphs of the judgment highlighted by the backend. */
   important_paragraphs?: string[];

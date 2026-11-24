@@ -17,16 +17,13 @@ export function Wordmark({
   animateMark?: boolean;
   variant?: "default" | "uppercase" | "light";
 }) {
-  const isLight = variant === "light";
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <SectionBadge
-        className={isLight ? "border-[var(--ink)] text-[var(--ink)]" : "border-[var(--on-ink)] text-[var(--on-ink)]"}
+        className={"border-[var(--text)] text-[var(--text)]"}
       />
       <span
-        className={`font-serif text-[22px] font-normal tracking-[-0.01em] leading-none ${
-          isLight ? "text-[var(--text)]" : "text-[var(--on-ink)]"
-        }`}
+        className={`font-serif text-[22px] font-normal tracking-[-0.01em] leading-none text-[var(--text)]`}
       >
         Section
       </span>

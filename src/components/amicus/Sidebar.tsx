@@ -159,7 +159,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "h-full max-h-screen w-[248px] shrink-0 flex-col overflow-hidden border-r border-[#333333] bg-[#121212] text-[#D0D0CC]",
+        "h-full max-h-screen w-[248px] shrink-0 flex-col overflow-hidden border-r border-border bg-card text-foreground/80",
         className,
       )}
     >
@@ -180,7 +180,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onNewMatter}
-          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[3px] bg-[#F6F2EA] px-4 font-sans text-[13px] font-medium text-[#121212] transition-colors hover:bg-[#F6F2EA]/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F6F2EA]"
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[3px] bg-primary px-4 font-sans text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Create new matter"
         >
           <Plus className="h-4 w-4" />
@@ -192,7 +192,7 @@ export function Sidebar({
       <nav className="mt-5 shrink-0 space-y-4 px-3" aria-label="Main navigation">
         {NAV.map((group) => (
           <div key={group.label}>
-            <p className="px-2 pb-1 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3A39E]">
+            <p className="px-2 pb-1 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -201,11 +201,11 @@ export function Sidebar({
                   key={item.label}
                   to={item.to}
                   activeOptions={{ exact: true }}
-                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
-                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F6F2EA]"
+                  activeProps={{ className: "!bg-secondary !border-l-2 !border-foreground !text-foreground" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   title={"hint" in item ? item.hint : undefined}
                 >
-                  <item.icon className="h-3.5 w-3.5 shrink-0 text-[#A3A39E]" />
+                  <item.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 truncate">{item.label}</span>
                 </Link>
               ))}
@@ -213,10 +213,10 @@ export function Sidebar({
                 <Link
                   to="/settings"
                   activeOptions={{ exact: true }}
-                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
-                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none"
+                  activeProps={{ className: "!bg-secondary !border-l-2 !border-foreground !text-foreground" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none"
                 >
-                  <Settings className="h-3.5 w-3.5 shrink-0 text-[#A3A39E]" />
+                  <Settings className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <span>Settings</span>
                 </Link>
               )}
@@ -224,10 +224,10 @@ export function Sidebar({
                 <Link
                   to="/admin"
                   activeOptions={{ exact: true }}
-                  activeProps={{ className: "!bg-[#262626] !border-l-2 !border-[#F6F2EA] !text-[#F6F2EA]" }}
-                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-[#D0D0CC] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA] focus-visible:outline-none"
+                  activeProps={{ className: "!bg-secondary !border-l-2 !border-foreground !text-foreground" }}
+                  className="flex min-h-[38px] items-center gap-2.5 rounded-[3px] border-l-2 border-transparent px-2.5 py-1.5 font-sans text-[13px] font-medium text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none"
                 >
-                  <LayoutDashboard className="h-3.5 w-3.5 text-[#A3A39E]" />
+                  <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>Admin</span>
                 </Link>
               )}
@@ -237,9 +237,9 @@ export function Sidebar({
       </nav>
 
       {/* Recent Matters list */}
-      <div className="mt-4 flex min-h-[180px] flex-1 flex-col border-t border-[#333333] pt-3">
+      <div className="mt-4 flex min-h-[180px] flex-1 flex-col border-t border-border pt-3">
         <div className="flex items-center justify-between gap-2 px-5 pb-2">
-          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3A39E]">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Recent matters
           </p>
           <div className="flex items-center gap-1">
@@ -249,16 +249,16 @@ export function Sidebar({
                   type="button"
                   aria-label="Filter matters by date"
                   className={cn(
-                    "rounded-[3px] p-1.5 text-[#A3A39E] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA]",
-                    customDate && "text-[#F6F2EA]",
+                    "rounded-[3px] p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+                    customDate && "text-foreground",
                   )}
                 >
                   <CalendarIcon className="h-3.5 w-3.5" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto border border-[#333333] bg-[#121212] p-3 text-[#F6F2EA]">
+              <PopoverContent align="end" className="w-auto border border-border bg-card p-3 text-foreground">
                 <div className="space-y-2">
-                  <p className="font-sans text-[11px] font-medium text-[#A3A39E]">
+                  <p className="font-sans text-[11px] font-medium text-muted-foreground">
                     Matters on this day
                   </p>
                   <Calendar
@@ -278,7 +278,7 @@ export function Sidebar({
                         setCustomDate(null);
                         setCalendarOpen(false);
                       }}
-                      className="flex w-full items-center justify-center gap-1 rounded-[3px] border border-[#333333] px-2 py-1.5 font-sans text-[11px] text-[#A3A39E] hover:bg-[#262626] hover:text-[#F6F2EA]"
+                      className="flex w-full items-center justify-center gap-1 rounded-[3px] border border-border px-2 py-1.5 font-sans text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
                       <X className="h-3 w-3" /> Clear date
                     </button>
@@ -291,11 +291,11 @@ export function Sidebar({
 
         <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-3">
           {threads.length === 0 ? (
-            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-[#A3A39E]">
+            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-muted-foreground">
               No matters recorded.
             </p>
           ) : visibleThreads.length === 0 ? (
-            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-[#A3A39E]">
+            <p className="px-2 pt-2 font-sans text-[13px] leading-relaxed text-muted-foreground">
               No matters match criteria.
             </p>
           ) : (
@@ -311,11 +311,11 @@ export function Sidebar({
                           className={cn(
                             "group flex w-full items-start gap-2 rounded-[3px] border-l-2 px-2.5 py-2 text-left transition-colors focus-visible:outline-none",
                             item && activeId === item.id
-                              ? "border-[#F6F2EA] bg-[#262626] text-[#F6F2EA]"
-                              : "border-transparent text-[#D0D0CC] hover:bg-[#262626] hover:text-[#F6F2EA]",
+                              ? "border-foreground bg-secondary text-foreground"
+                              : "border-transparent text-foreground/80 hover:bg-secondary hover:text-foreground",
                           )}
                         >
-                          <span className="mt-0.5 shrink-0 text-[#A3A39E]">
+                          <span className="mt-0.5 shrink-0 text-muted-foreground">
                             {item.mode === "draft" ? (
                               <FileText className="h-3.5 w-3.5" />
                             ) : (
@@ -326,7 +326,7 @@ export function Sidebar({
                             <span className="block truncate font-sans text-[13px] font-normal leading-snug">
                               {item.title}
                             </span>
-                            <span className="mt-0.5 block font-sans text-[11px] text-[#A3A39E]">
+                            <span className="mt-0.5 block font-sans text-[11px] text-muted-foreground">
                               Matter {visibleThreads.length - idx} • {item.mode === "draft" ? "Draft" : "Research"}
                             </span>
                           </span>
@@ -334,7 +334,7 @@ export function Sidebar({
                       </TooltipTrigger>
                       <TooltipContent
                         side="right"
-                        className="max-w-xs border border-[#333333] bg-[#262626] text-[#F6F2EA]"
+                        className="max-w-xs border border-border bg-secondary text-foreground"
                       >
                         {item.title}
                       </TooltipContent>
@@ -348,13 +348,13 @@ export function Sidebar({
       </div>
 
       {/* User Footer: avatar border --ink-4 (#444444), logout */}
-      <div className="shrink-0 border-t border-[#333333] bg-[#121212] px-4 py-3">
+      <div className="shrink-0 border-t border-border bg-card px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-[#444444] bg-[#262626] font-sans text-[12px] font-semibold text-[#F6F2EA]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-border bg-secondary font-sans text-[12px] font-semibold text-foreground">
               {(userName || "?").charAt(0).toUpperCase()}
             </span>
-            <span className="min-w-0 truncate font-sans text-[13px] font-medium text-[#F6F2EA]">
+            <span className="min-w-0 truncate font-sans text-[13px] font-medium text-foreground">
               {userName || "Advocate"}
             </span>
           </div>
@@ -362,7 +362,7 @@ export function Sidebar({
             type="button"
             onClick={onLogout}
             aria-label="Sign out"
-            className="rounded-[3px] p-2 text-[#A3A39E] transition-colors hover:bg-[#262626] hover:text-[#F6F2EA]"
+            className="rounded-[3px] p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
           </button>

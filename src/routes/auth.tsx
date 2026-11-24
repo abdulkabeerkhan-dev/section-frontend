@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSignIn, useAuth } from "@clerk/clerk-react";
 import { Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 const inputClass =
-  "mt-2 h-11 w-full rounded-md border border-border bg-card px-3.5 text-[15px] text-foreground placeholder:text-muted-foreground focus:border-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "w-full rounded border border-input bg-background px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/40";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -83,118 +83,110 @@ function AuthPage() {
 
 
   return (
-    <main className="landing-harvey relative flex min-h-dvh flex-col bg-background text-foreground">
+    <main className="site grid min-h-dvh bg-background text-foreground md:grid-cols-2">
       {showOverlay && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/90 backdrop-blur-sm">
-          <span className="h-2 w-2 rounded-full bg-foreground/70 pulse-gold" aria-hidden />
-          <p className="font-serif text-lg text-foreground">Signing you in</p>
+          <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+          <p className="font-serif text-2xl text-foreground">Signing you in</p>
         </div>
       )}
 
-      <header className="border-b border-border/60">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
-          <span className="flex items-baseline gap-2">
-            <span className="font-serif text-2xl leading-none text-foreground">§</span>
-            <span className="font-serif text-[16px] font-medium tracking-[-0.01em] text-foreground">
-              Section
-            </span>
-          </span>
+      <section className="relative hidden flex-col justify-between overflow-hidden border-r border-border p-10 md:flex">
+        <Link to="/" className="font-serif text-3xl text-foreground">
+          § <span>Section</span>
+        </Link>
+        <span
+          aria-hidden
+          className="anim-float pointer-events-none absolute -right-10 top-1/2 -translate-y-1/2 font-serif text-[28rem] leading-none text-foreground/10"
+        >
+          §
+        </span>
+        <p className="relative max-w-sm font-serif text-4xl leading-tight">
+          Precise answers.
+          <br />
+          Lasting advantage.
+        </p>
+      </section>
+
+      <section className="flex flex-col p-6 md:p-10">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="font-serif text-2xl text-foreground md:invisible">
+            §
+          </Link>
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid size-9 place-items-center rounded border border-input bg-background text-foreground transition-colors hover:bg-accent"
           >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
         </div>
-      </header>
 
-      <section className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="w-full max-w-[400px]">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Invitation only
-          </p>
-          <h1 className="mt-4 font-serif text-[38px] font-normal leading-[1.05] tracking-[-0.025em] text-foreground">
-            Welcome back
-          </h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            Sign in to your private workspace for Pakistani case law research and
-            court ready drafting.
-          </p>
+        <div className="anim-fade-up m-auto w-full max-w-sm py-12">
+          <p className="label-caps">Invitation only</p>
+          <h1 className="mt-3 font-serif text-5xl">Welcome back</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Sign in to continue to Section.</p>
 
-          <form onSubmit={handleSubmit} className="mt-9 space-y-5">
-            <div>
-              <label htmlFor="email" className="text-[13px] font-medium text-foreground">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-                placeholder="you@firm.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="text-[13px] font-medium text-foreground">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-                placeholder="••••••••"
-              />
-            </div>
-            {error && (
-              <div
-                role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px] leading-snug text-destructive"
-              >
-                {error}
-              </div>
-            )}
-            <div className="flex flex-col gap-3 pt-1 sm:flex-row">
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-6 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                {loading ? "Signing in" : "Sign in"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setRequestOpen(true)}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-border px-6 text-[13px] font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                Request access
-              </button>
-            </div>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+            <label htmlFor="email" className="sr-only">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              placeholder="Email"
+            />
+            <label htmlFor="password" className="sr-only">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+              placeholder="Password"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded bg-primary py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
+            >
+              {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {loading ? "Signing in" : "Sign in"}
+            </button>
           </form>
 
-          <p className="mt-6 text-[12px] leading-relaxed text-muted-foreground">
-            Section is invitation only. If you do not have an account yet, request
-            access and we will be in touch.
+          {error && (
+            <p role="alert" className="mt-3 rounded border border-border bg-card px-4 py-3 text-sm text-foreground">
+              {error}
+            </p>
+          )}
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            New to Section?{" "}
+            <button
+              type="button"
+              onClick={() => setRequestOpen(true)}
+              className="text-foreground underline-offset-4 hover:underline"
+            >
+              Request access
+            </button>
           </p>
         </div>
-      </section>
 
-      <footer className="border-t border-border/60">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-2 px-6 py-7 text-[12px] text-muted-foreground sm:flex-row sm:items-center">
-          <span>© {new Date().getFullYear()} Section</span>
-          <span>For licensed legal professionals in Pakistan</span>
-        </div>
-      </footer>
+        <p className="text-center text-xs text-muted-foreground">
+          For licensed legal professionals in Pakistan.
+        </p>
+      </section>
 
       <RequestAccessModal open={requestOpen} onOpenChange={setRequestOpen} />
     </main>
