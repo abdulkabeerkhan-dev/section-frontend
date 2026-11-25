@@ -11,9 +11,9 @@
   VITE_API_KEY = "amicus-dev-2024"
   VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ"
   VITE_CLERK_SIGN_UP_URL = "/accept-invitation"
-  VITE_SUPABASE_URL = "https://ogbuynedouxbvdhrheyq.supabase.co"
+  VITE_SUPABASE_URL = "https://zrfemmnklhrzvfsqrhqs.supabase.co"
   VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Fx60n2qkyChTyePGCSAxKg_52oa7e0h"
-  VITE_SUPABASE_PROJECT_ID = "ogbuynedouxbvdhrheyq"
+  VITE_SUPABASE_PROJECT_ID = "zrfemmnklhrzvfsqrhqs"
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ"
   VITE_CLERK_PUBLISHABLE_KEY_LIVE = "pk_live_Y2xlcmsuc2VjdGlvbi1haS5sb3ZhYmxlLmFwcCQ"
 

@@ -25,11 +25,11 @@ services:
       - key: VITE_CLERK_SIGN_UP_URL
         value: /accept-invitation
       - key: VITE_SUPABASE_URL
-        value: https://ogbuynedouxbvdhrheyq.supabase.co
+        value: https://zrfemmnklhrzvfsqrhqs.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
         value: sb_publishable_Fx60n2qkyChTyePGCSAxKg_52oa7e0h
       - key: VITE_SUPABASE_PROJECT_ID
-        value: ogbuynedouxbvdhrheyq
+        value: zrfemmnklhrzvfsqrhqs
       - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
         value: pk_test_bGFyZ2Utcm9kZW50LTM4LmNsZXJrLmFjY291bnRzLmRldiQ
       - key: VITE_CLERK_PUBLISHABLE_KEY_LIVE
