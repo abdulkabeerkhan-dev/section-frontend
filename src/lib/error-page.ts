@@ -1,6 +1,10 @@
 export function renderErrorPage(error?: unknown): string {
-  const message =
-    error instanceof Error
+  // Internal error text (file paths, upstream responses, keys in URLs) stays in the server log.
+  // Production shows a generic page; development keeps the message for debugging.
+  const showDetail = process.env.NODE_ENV !== "production";
+  const message = !showDetail
+    ? ""
+    : error instanceof Error
       ? error.message
       : typeof error === "string"
         ? error
