@@ -19,6 +19,7 @@ import {
   type JurisprudenceEra,
 } from "@/lib/api";
 import { listMyActivity, logActivity, type ActivityRecord } from "@/lib/activity.functions";
+import type { Json } from "@/integrations/supabase/types";
 import { learnFromExchange } from "@/lib/memory.functions";
 import { summarizeResponse } from "@/lib/personalize";
 import { useLogout, useMe } from "@/lib/useMe";
@@ -332,7 +333,7 @@ export function QueryWorkspace() {
     }
     list.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
     return list;
-  }, [records]);
+  }, [allRecords]);
 
   const activeTurns = useMemo(() => {
     if (!activeThreadId) return [];
@@ -344,7 +345,7 @@ export function QueryWorkspace() {
     const knownQuestions = new Set(persisted.map((t) => (t.question || "").trim()));
     const extra = draftTurns.filter((t) => !knownQuestions.has((t.question || "").trim()));
     return [...persisted, ...extra];
-  }, [records, activeThreadId, draftTurns]);
+  }, [allRecords, activeThreadId, draftTurns]);
 
   const activeTurn = activeTurns[activeTurns.length - 1];
 
@@ -493,7 +494,7 @@ export function QueryWorkspace() {
           thread_id: threadId,
           mode,
           question: q,
-          response: response as unknown as Record<string, unknown>,
+          response: response as unknown as Json,
           created_at: new Date().toISOString(),
           category: "general",
         };
