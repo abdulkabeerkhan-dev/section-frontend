@@ -6,13 +6,39 @@ import { decodeJwt } from "jose";
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
-function isClerkIssuer(iss: string): boolean {
+// Only our own Clerk instance may issue tokens. Trusting any issuer the token names (as this did,
+// for any host containing "clerk.") lets anyone host a JWKS and sign tokens for any user id.
+// Allowed: the instance encoded in the publishable key the app is built with, plus CLERK_ISSUERS
+// (comma-separated https URLs) for an extra instance such as production.
+function issuerFromPublishableKey(pk: string | undefined): string | null {
+  if (!pk) return null;
+  const parts = pk.split("_");
+  if (parts.length < 3) return null;
   try {
-    const host = new URL(iss).host;
-    return host.endsWith(".clerk.accounts.dev") || host.includes("clerk.");
+    const host = atob(parts.slice(2).join("_")).replace(/\$$/, "").trim();
+    return host ? `https://${host}` : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function allowedIssuers(): Set<string> {
+  const out = new Set<string>();
+  const fromKey = issuerFromPublishableKey(
+    ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_CLERK_PUBLISHABLE_KEY) ||
+      (typeof process !== "undefined" ? process.env.VITE_CLERK_PUBLISHABLE_KEY : undefined),
+  );
+  if (fromKey) out.add(fromKey);
+  const extra = typeof process !== "undefined" ? process.env.CLERK_ISSUERS || process.env.CLERK_ISSUER || "" : "";
+  for (const i of extra.split(",")) {
+    const v = i.trim().replace(/\/$/, "");
+    if (v.startsWith("https://")) out.add(v);
+  }
+  return out;
+}
+
+function isClerkIssuer(iss: string): boolean {
+  return allowedIssuers().has(String(iss || "").replace(/\/$/, ""));
 }
 
 function getJwks(issuer: string) {

@@ -45,8 +45,30 @@ async function normalizeCatastrophicSsrResponse(response: Response, request: Req
   });
 }
 
+const SECURITY_HEADERS: Record<string, string> = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Content-Security-Policy": "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    if (!headers.has(k)) headers.set(k, v);
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    return withSecurityHeaders(await handle(request, env, ctx));
+  },
+};
+
+async function handle(request: Request, env: unknown, ctx: unknown): Promise<Response> {
     try {
       const url = new URL(request.url);
       // If a request for a static asset reaches the SSR catch-all, the asset was removed or does not exist.
@@ -85,7 +107,8 @@ export default {
       const url = request.url || "";
       const accept = request.headers.get("accept") || "";
       if (url.includes("/_server") || accept.includes("application/json") || request.headers.has("x-tsr-server-fn")) {
-        return new Response(JSON.stringify({ error: String(error) }), {
+        // never echo internal error text to the client; it is logged above
+        return new Response(JSON.stringify({ error: "Internal server error" }), {
           status: 500,
           headers: { "content-type": "application/json" },
         });
@@ -95,5 +118,4 @@ export default {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
-  },
-};
+}
