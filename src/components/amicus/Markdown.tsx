@@ -385,7 +385,7 @@ export function Markdown({ children, className, citations, memorandum }: Markdow
       >
         {children
           .replace(/^(#{1,6})(?=\S)/gm, "$1 ")
-          .replace(/^(\s*(?:#{1,6}\s+|>\s*)?)[⚠✅✔❌📄⚖🔒][\uFE0E\uFE0F]?\s*/gm, "$1")
+          .replace(/^(\s*(?:#{1,6}\s+|>\s*)?)[⚠✅✔❌📄⚖🔒][\uFE0E\uFE0F]?\s*/gmu, "$1")
           .replace(/^>\s*(?:\*\*)?(?:✓\s*)?VERIFIED RESEARCH MEMORANDUM[^\n]*\n?/gim, "")
           .replace(/^>\s*(?:\*\*)?(?:⚠️\s*)?PARTIAL RESEARCH RECORD[^\n]*\n?/gim, "")
           .replace(/`✓ Verified`/g, "")
