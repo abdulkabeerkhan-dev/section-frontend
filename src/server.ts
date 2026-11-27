@@ -51,7 +51,23 @@ const SECURITY_HEADERS: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-  "Content-Security-Policy": "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  // Scripts only from this site, Clerk and Cloudflare's bot check; network calls only to our own
+  // API and Clerk. Inline scripts stay allowed because SSR hydration and the theme bootstrap use them.
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://clerk.sectionai.net https://*.clerk.accounts.dev https://challenges.cloudflare.com",
+    "connect-src 'self' https://api.sectionai.net https://lawyer-backend-production-5c6d.up.railway.app https://clerk.sectionai.net https://*.clerk.accounts.dev https://clerk-telemetry.com",
+    "img-src 'self' data: blob: https://img.clerk.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "frame-src 'self' https:",
+    "worker-src 'self' blob:",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests",
+  ].join("; "),
 };
 
 function withSecurityHeaders(response: Response): Response {
