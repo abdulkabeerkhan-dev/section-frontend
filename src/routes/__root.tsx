@@ -231,7 +231,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "preconnect",
-        href: "https://large-rodent-38.clerk.accounts.dev",
+        href: "https://clerk.sectionai.net",
         crossOrigin: "anonymous",
       },
       {

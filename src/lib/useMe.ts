@@ -161,6 +161,16 @@ export function useMe() {
   });
 }
 
+/** Queries are client-confidential: drop the copies kept in this browser when someone signs out. */
+export function clearLocalUserData() {
+  try {
+    localStorage.removeItem("section_local_activity");
+    sessionStorage.removeItem("section_counsel_handoff");
+  } catch {
+    // storage blocked (private mode): nothing stored to clear
+  }
+}
+
 export function useLogout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -168,6 +178,7 @@ export function useLogout() {
   return useCallback(async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearLocalUserData();
     await signOut();
     navigate({ to: "/auth", replace: true });
   }, [navigate, queryClient, signOut]);

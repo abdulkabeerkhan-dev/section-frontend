@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
-import { useMe, useLogout } from "@/lib/useMe";
+import { clearLocalUserData, useMe, useLogout } from "@/lib/useMe";
 import { Wordmark } from "./Wordmark";
 
 function FullScreenLoader() {
@@ -71,6 +71,7 @@ export function SessionGuard({ children, requireAdmin = false }: SessionGuardPro
     if (!isLoaded || !isSignedIn || !me) return;
     if (me.status === "inactive") {
       toast.error("Your account has been deactivated.");
+      clearLocalUserData();
       signOut().then(() => navigate({ to: "/auth" }));
       return;
     }
