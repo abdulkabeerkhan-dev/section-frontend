@@ -2,7 +2,8 @@ import { expect, test } from "vitest";
 import { RESEARCH_MARKER, detectCourt, detectDocument, withDraftChoice } from "@/lib/draft-intent";
 
 test("a complete instruction drafts straight away", () => {
-  const q = "Draft a pre-arrest bail petition under Section 498 CrPC before the Sessions Court for my client.";
+  const q =
+    "Draft a pre-arrest bail petition under Section 498 CrPC before the Sessions Court for my client.";
   expect(detectDocument(q)).toBe("Pre-arrest bail petition (s.498 CrPC)");
   expect(detectCourt(q)).toBe("Sessions Court");
 });

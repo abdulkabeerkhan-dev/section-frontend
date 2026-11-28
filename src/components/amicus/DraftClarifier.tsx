@@ -11,14 +11,19 @@ interface DraftClarifierProps {
   onCancel: () => void;
 }
 
-const chip =
-  "rounded-[3px] border px-3 py-1.5 font-sans text-[12px] transition-colors text-left";
+const chip = "rounded-[3px] border px-3 py-1.5 font-sans text-[12px] transition-colors text-left";
 const chipOn = "border-[var(--ink)] bg-[var(--ink)] text-[var(--on-ink)]";
-const chipOff = "border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--ink)]";
+const chipOff =
+  "border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--ink)]";
 const OTHER = "__other__";
 
 /** Counsel asks what to draft and for which court before drafting, instead of guessing. */
-export function DraftClarifier({ initialDocument, initialCourt, onConfirm, onCancel }: DraftClarifierProps) {
+export function DraftClarifier({
+  initialDocument,
+  initialCourt,
+  onConfirm,
+  onCancel,
+}: DraftClarifierProps) {
   const [doc, setDoc] = useState<string>(initialDocument ?? "");
   const [docOther, setDocOther] = useState("");
   const [court, setCourt] = useState<string>(initialCourt ?? "");
@@ -52,7 +57,11 @@ export function DraftClarifier({ initialDocument, initialCourt, onConfirm, onCan
             {d.label}
           </button>
         ))}
-        <button type="button" onClick={() => setDoc(OTHER)} className={cn(chip, doc === OTHER ? chipOn : chipOff)}>
+        <button
+          type="button"
+          onClick={() => setDoc(OTHER)}
+          className={cn(chip, doc === OTHER ? chipOn : chipOff)}
+        >
           Other…
         </button>
       </div>
@@ -80,7 +89,11 @@ export function DraftClarifier({ initialDocument, initialCourt, onConfirm, onCan
             {c.label}
           </button>
         ))}
-        <button type="button" onClick={() => setCourt(OTHER)} className={cn(chip, court === OTHER ? chipOn : chipOff)}>
+        <button
+          type="button"
+          onClick={() => setCourt(OTHER)}
+          className={cn(chip, court === OTHER ? chipOn : chipOff)}
+        >
           Other…
         </button>
       </div>
@@ -97,7 +110,11 @@ export function DraftClarifier({ initialDocument, initialCourt, onConfirm, onCan
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="button" disabled={!finalDoc || !finalCourt} onClick={() => onConfirm(finalDoc, finalCourt)}>
+        <Button
+          type="button"
+          disabled={!finalDoc || !finalCourt}
+          onClick={() => onConfirm(finalDoc, finalCourt)}
+        >
           Draft it
         </Button>
       </div>
