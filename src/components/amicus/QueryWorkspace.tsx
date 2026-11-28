@@ -802,11 +802,11 @@ export function QueryWorkspace() {
           </div>) : (
           <>
             {/* Top bar on result pages: breadcrumb (Matters / matter name / page), a status pill, and actions */}
-            <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--surface-2)] px-6 py-3 shadow-xs">
-              <div className="flex items-center gap-2 font-sans text-[12px]">
-                <span className="text-[var(--text-muted)]">Matters</span>
-                <span className="text-[var(--text-muted)]">/</span>
-                <span className="font-medium text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
+            <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 shadow-xs sm:px-6 sm:py-3">
+              <div className="flex min-w-0 items-center gap-2 font-sans text-[12px]">
+                <span className="hidden text-[var(--text-muted)] sm:inline">Matters</span>
+                <span className="hidden text-[var(--text-muted)] sm:inline">/</span>
+                <span className="min-w-0 truncate font-medium text-[var(--text)] sm:max-w-md">
                   {activeTurn?.question || (threads.find((t) => t?.id === activeThreadId)?.title) || "Active Matter"}
                 </span>
                 <span className="text-[var(--text-muted)]">/</span>
@@ -814,11 +814,11 @@ export function QueryWorkspace() {
                   {assistant === "mike" || activeTurns[activeTurns.length - 1]?.mode === "draft" ? "Draft" : "Research"}
                 </span>
                 {assistant === "mike" || activeTurns[activeTurns.length - 1]?.mode === "draft" ? (
-                  <span className="ml-1.5 rounded-[3px] border border-[var(--ink)] bg-transparent px-2 py-0.5 font-sans text-[10px] font-bold tracking-wider text-[var(--ink)] uppercase">
+                  <span className="ml-1.5 hidden rounded-[3px] border border-[var(--ink)] bg-transparent px-2 sm:inline py-0.5 font-sans text-[10px] font-bold tracking-wider text-[var(--ink)] uppercase">
                     DRAFT
                   </span>
                 ) : (
-                  <span className="ml-1.5 rounded-[3px] bg-[var(--ink)] px-2 py-0.5 font-sans text-[10px] font-bold tracking-wider text-[var(--on-ink)] uppercase">
+                  <span className="ml-1.5 hidden rounded-[3px] bg-[var(--ink)] px-2 sm:inline py-0.5 font-sans text-[10px] font-bold tracking-wider text-[var(--on-ink)] uppercase">
                     RESEARCH
                   </span>
                 )}
@@ -826,7 +826,7 @@ export function QueryWorkspace() {
             </header>
             <Conversation className="flex-1">
               <ConversationContent
-                className="mx-auto w-full max-w-[1440px] gap-8 px-4 py-8 sm:px-6 sm:py-10"
+                className="mx-auto w-full max-w-[1440px] gap-6 px-3 py-5 sm:gap-8 sm:px-6 sm:py-10"
                 style={{ paddingBottom: "180px" }}
               >
                 {era !== "all" && (
@@ -946,7 +946,7 @@ export function QueryWorkspace() {
               <ConversationScrollButton className="bottom-6 right-6 left-auto translate-x-0 z-20 shadow-md border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-2)]" />
             </Conversation>
 
-            <div className="border-t border-border bg-background px-3 py-4 sm:px-8">
+            <div className="border-t border-border bg-background px-2 py-2 sm:px-8 sm:py-4">
               <div className="mx-auto max-w-[1440px]">
                 {pendingDraft && (
                   <DraftClarifier
