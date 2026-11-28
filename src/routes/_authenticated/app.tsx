@@ -1,37 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { QueryWorkspace } from "@/components/amicus/QueryWorkspace";
-import { SessionGuard } from "@/components/amicus/SessionGuard";
-import { PleadingCanvas } from "@/components/amicus/PleadingCanvas";
-import { AssistantProvider } from "@/lib/assistant";
-
+// There is no general chat window: the workspace is Jurist (research), and Counsel (drafting) has
+// its own page. Old links, sign-in and invitations that point at /app land on Jurist.
 export const Route = createFileRoute("/_authenticated/app")({
-  head: () => ({
-    meta: [
-      { title: "Legal Research Workspace | Section" },
-      {
-        name: "description",
-        content: "Research Pakistani case law and prepare court-ready legal drafts in Section.",
-      },
-      { property: "og:title", content: "Legal Research Workspace | Section" },
-      {
-        property: "og:description",
-        content: "Research Pakistani case law and prepare court-ready legal drafts in Section.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: AppPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/assistants/ark", replace: true });
+  },
 });
-
-function AppPage() {
-  return (
-    <SessionGuard>
-      <AssistantProvider id={null}>
-        <QueryWorkspace />
-        <PleadingCanvas />
-      </AssistantProvider>
-    </SessionGuard>
-  );
-}
