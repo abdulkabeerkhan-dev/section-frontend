@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import type { BackendMode, GenerateResponse, Mode, PrecedentCard } from "@/lib/api";
+import { backendLink, type BackendMode, type GenerateResponse, type Mode, type PrecedentCard } from "@/lib/api";
+import { AnswerBrief } from "./AnswerBrief";
 import { DocumentView } from "./DocumentView";
 import { AnalysisView } from "./AnalysisView";
 import { JudgmentReaderDrawer } from "./JudgmentReaderDrawer";
@@ -15,6 +16,8 @@ interface ResultsPanelProps {
   attachmentName: string | null;
   answerFooter?: React.ReactNode;
   onCitationClick?: (citation: string) => void;
+  /** Puts a suggested follow-up question in the composer. */
+  onFollowUp?: (question: string) => void;
 }
 
 function precedentKey(card: PrecedentCard): string {
@@ -75,6 +78,7 @@ export function ResultsPanel({
   attachmentName,
   answerFooter,
   onCitationClick,
+  onFollowUp,
 }: ResultsPanelProps) {
   const isDraft = mode === "draft" && Boolean(data.document_text);
   const precedentCards = useMemo(() => uniquePrecedents(data.precedent_cards ?? []), [data.precedent_cards]);
@@ -450,6 +454,25 @@ export function ResultsPanel({
       </div>
     </div>
   );
+
+  // Jurist answer as a brief, when the backend sent one
+  if (data.brief && !isDraft) {
+    return (
+      <div className="w-full">
+        {retrievalHealthNotice}
+        <AnswerBrief
+          brief={data.brief}
+          answerText={data.document_text ?? ""}
+          onFollowUp={onFollowUp}
+          onOpenPdf={(url) => {
+            const href = backendLink(url);
+            if (href) window.open(href, "_blank", "noopener,noreferrer");
+          }}
+        />
+        {answerFooter && <div className="mt-4">{answerFooter}</div>}
+      </div>
+    );
+  }
 
   // Jurist Mode
   return (

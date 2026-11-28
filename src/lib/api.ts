@@ -140,7 +140,86 @@ export interface RetrievalHealth {
   events: RetrievalHealthEvent[];
 }
 
+/** Structured answer for the brief view (backend `brief`, version 1). */
+export interface BriefCase {
+  n: number;
+  kind: "case";
+  citation: string;
+  title: string;
+  court: string;
+  year: string;
+  relevant_part: string;
+  why: string;
+  held: string;
+  pdf_url: string;
+}
+export interface BriefStatute {
+  n: number;
+  kind: "statute";
+  act: string;
+  label: string;
+  heading: string;
+  text: string;
+  verified: boolean;
+  period: string;
+  trigger: string;
+}
+export type BriefAuthority = BriefCase | BriefStatute;
+export interface AnswerBrief {
+  summary: string;
+  key_facts: { label: string; value: string; sources: number[] }[];
+  points: { heading: string; text: string; sources: number[] }[];
+  checklist: string[];
+  verify: string[];
+  gaps: string[];
+  follow_ups: string[];
+  authorities: BriefAuthority[];
+}
+
+function strList(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
+}
+function numList(v: unknown): number[] {
+  return Array.isArray(v) ? v.filter((x): x is number => typeof x === "number") : [];
+}
+
+/** Validates the backend brief; anything malformed returns null and the classic view is used. */
+export function parseBrief(v: unknown): AnswerBrief | null {
+  if (!v || typeof v !== "object") return null;
+  const b = v as Record<string, unknown>;
+  const summary = typeof b.summary === "string" ? b.summary.trim() : "";
+  if (!summary) return null;
+  const s = (x: unknown) => (typeof x === "string" ? x : "");
+  const authorities: BriefAuthority[] = [];
+  for (const raw of Array.isArray(b.authorities) ? b.authorities : []) {
+    if (!raw || typeof raw !== "object") continue;
+    const a = raw as Record<string, unknown>;
+    if (typeof a.n !== "number") continue;
+    if (a.kind === "case" && s(a.citation)) {
+      authorities.push({ n: a.n, kind: "case", citation: s(a.citation), title: s(a.title), court: s(a.court),
+        year: s(a.year), relevant_part: s(a.relevant_part), why: s(a.why), held: s(a.held), pdf_url: s(a.pdf_url) });
+    } else if (a.kind === "statute" && (s(a.label) || s(a.text))) {
+      authorities.push({ n: a.n, kind: "statute", act: s(a.act), label: s(a.label), heading: s(a.heading),
+        text: s(a.text), verified: a.verified === true, period: s(a.period), trigger: s(a.trigger) });
+    }
+  }
+  const objList = <T,>(v: unknown, f: (o: Record<string, unknown>) => T | null): T[] =>
+    (Array.isArray(v) ? v : []).flatMap((o) => (o && typeof o === "object" ? [f(o as Record<string, unknown>)] : [])).filter((x): x is T => x !== null);
+  return {
+    summary,
+    key_facts: objList(b.key_facts, (o) => (s(o.label) && s(o.value) ? { label: s(o.label), value: s(o.value), sources: numList(o.sources) } : null)),
+    points: objList(b.points, (o) => (s(o.text) ? { heading: s(o.heading), text: s(o.text), sources: numList(o.sources) } : null)),
+    checklist: strList(b.checklist),
+    verify: strList(b.verify),
+    gaps: strList(b.gaps),
+    follow_ups: strList(b.follow_ups),
+    authorities: authorities.sort((x, y) => x.n - y.n),
+  };
+}
+
 export interface GenerateResponse {
+  /** Structured answer for the brief view; null for older answers. */
+  brief?: AnswerBrief | null;
   issues: string[];
   cases: CaseResult[];
   /** Structured precedent cards; preferred over `cases` when present. */
@@ -311,6 +390,16 @@ export async function requestPasswordTicket(
 
 function base(): string | undefined {
   return BASE_URL ? BASE_URL.replace(/\/$/, "") : undefined;
+}
+
+/** A backend link made absolute; only http(s) links are returned. */
+export function backendLink(url: string): string | null {
+  try {
+    const u = new URL(url, `${base() ?? window.location.origin}/`);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Public PDF stream endpoint on the active backend. */
@@ -1054,6 +1143,7 @@ export function normalizeResponse(raw: unknown): GenerateResponse {
     precedent_cards,
     statutes,
     document_text: asString(p.answer) ?? asString(p.document_text),
+    brief: parseBrief((p as Record<string, unknown>).brief ?? (rec as Record<string, unknown>).brief),
     doc_id: asString(p.doc_id) ?? asString(p.query_id),
     mode,
     job_id: asString(rec.job_id),

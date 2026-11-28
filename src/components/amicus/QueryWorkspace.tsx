@@ -885,6 +885,7 @@ export function QueryWorkspace() {
                               mode={turn.mode}
                               fileName={fileNameFor(turn.mode, turn.question, turn.docType)}
                               attachmentName={null}
+                              onFollowUp={seedComposer}
                               answerFooter={
                                 response.truncated && jobId ? (
                                   <ContinueAnswerControl
