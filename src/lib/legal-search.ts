@@ -29,6 +29,8 @@ export interface JudgmentResult {
 
 export interface StatuteResult {
   canonical_id: string;
+  /** Readable provision and act, e.g. "Section 497 · Code of Criminal Procedure (CrPC), 1898". */
+  label: string;
   title: string;
   in_force: boolean;
   snippet: string;
@@ -52,12 +54,20 @@ export function judgmentPdfHref(pdf?: string): string | undefined {
   return resolvePdfUrl(pdf, undefined);
 }
 
+/** Scraped-site leftovers at the start of stored headnotes ("Citation Name: ... Bookmark this Case"). */
+export function cleanHoldingText(t: string): string {
+  return t
+    .replace(/^\s*Citation\s+Name\s*:.*?Bookmark\s+this\s+Case\s*/is, "")
+    .replace(/\bBookmark\s+this\s+Case\b/gi, "")
+    .trim();
+}
+
 function toJudgment(r: Record<string, unknown>): JudgmentResult {
   return {
     case_title: str(r.case_title ?? r.case_name ?? r.title),
     citation: str(r.citation),
     court: str(r.court),
-    holding: str(r.holding ?? r.summary ?? r.snippet ?? r.ratio_decidendi),
+    holding: cleanHoldingText(str(r.holding ?? r.summary ?? r.snippet ?? r.ratio_decidendi)),
     pdf_url: str(r.pdf_url) || undefined,
   };
 }
@@ -70,10 +80,20 @@ export async function searchJudgments(
   return list(raw).map(toJudgment);
 }
 
+/** "Section 497 · Code of Criminal Procedure (CrPC), 1898" instead of "CRPC 1898 SEC 497". */
+function statuteLabel(r: Record<string, unknown>): string {
+  const act = str(r.act_name ?? r.short_act_name);
+  const num = str(r.primary_num);
+  const type = str(r.provision_type) || "section";
+  if (act && num) return `${type.charAt(0).toUpperCase()}${type.slice(1)} ${num} · ${act}`;
+  return str(r.display_name) || str(r.canonical_id ?? r.id).replace(/_/g, " ");
+}
+
 export async function searchStatutes(query: string): Promise<StatuteResult[]> {
   const raw = await backendFetch<unknown>(`/api/search/statutes?query=${encodeURIComponent(query)}`);
   return list(raw).map((r) => ({
     canonical_id: str(r.canonical_id ?? r.id),
+    label: statuteLabel(r),
     title: str(r.title ?? r.display_name ?? r.provision_title ?? r.heading),
     in_force: r.in_force !== false,
     snippet: str(r.snippet ?? r.excerpt ?? r.text),
