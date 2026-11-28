@@ -63,16 +63,21 @@ export function FeedbackPanel({ queryId, originalAnswer }: FeedbackPanelProps) {
   }
 
   return (
-    <div className="mt-3">
+    <div className="mt-5">
       {!open ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <Lightbulb className="h-3.5 w-3.5" />
-          Correct Answer
-        </button>
+        <div className="flex flex-wrap items-center gap-3 rounded-[8px] border border-dashed border-[var(--line)] px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-[var(--ink)] px-4 font-sans text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--ink)] hover:text-[var(--on-ink)]"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Correct this answer
+          </button>
+          <span className="font-sans text-[12px] text-[var(--text-muted)]">
+            Spotted a mistake? Your correction goes to senior-lawyer review and helps train Section.
+          </span>
+        </div>
       ) : (
         <div className="rounded-lg border border-border bg-card/60 p-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
