@@ -3,6 +3,8 @@ import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts, type Er
 import { ClerkProvider } from "@clerk/clerk-react";
 import { useEffect, type ReactNode } from "react";
 
+import { installPdfLinkInterceptor } from "@/lib/pdf-open";
+
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -268,6 +270,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Judgment PDF links open through an authenticated download (no anonymous PDF access).
+  useEffect(() => {
+    installPdfLinkInterceptor();
+  }, []);
 
   useEffect(() => {
     try {
