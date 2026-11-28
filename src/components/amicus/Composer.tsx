@@ -239,7 +239,7 @@ export function Composer({
       {/* Ask Box: --surface, 1px --ink border, soft shadow, radius 3px */}
       <div className="overflow-hidden rounded-[3px] border border-[var(--ink)] bg-[var(--surface)] shadow-[0_1px_4px_rgba(18,18,18,0.06)]">
         {/* Segmented Control on top row: Research | Draft | Summarize */}
-        <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface-2)] px-4 py-2">
+        <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 sm:px-4 sm:py-2">
           <div className="flex items-center gap-1 rounded-[3px] bg-[var(--chip-bg)] p-0.5">
             {allowedModes.includes("research") && (
               <button
@@ -294,7 +294,7 @@ export function Composer({
             )}
           </div>
 
-          <span className="font-sans text-[11px] text-[var(--text-muted)]">
+          <span className="hidden font-sans text-[11px] text-[var(--text-muted)] sm:inline">
             Press Enter ↵ to submit
           </span>
         </div>
@@ -323,7 +323,7 @@ export function Composer({
         )}
 
         {/* Textarea Input Field */}
-        <div className="p-4">
+        <div className="px-3 py-2.5 sm:p-4">
           <textarea
             ref={textareaRef}
             value={text}
@@ -338,8 +338,8 @@ export function Composer({
         </div>
 
         {/* Bottom controls row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] bg-[var(--surface-2)] px-4 py-2.5">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--line)] bg-[var(--surface-2)] px-2 py-1.5 sm:gap-3 sm:px-4 sm:py-2.5">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -359,9 +359,9 @@ export function Composer({
               <Select value={era} onValueChange={(v) => onEraChange(v as JurisprudenceEra)}>
                 <SelectTrigger
                   aria-label="Sources repository filter"
-                  className="h-9 min-h-[36px] w-auto gap-1 rounded-[3px] border border-[var(--line)] bg-[var(--surface)] px-2.5 font-sans text-[12px] font-medium text-[var(--text)] focus:ring-0"
+                  className="h-9 min-h-[36px] w-auto min-w-0 max-w-[60vw] gap-1 truncate rounded-[3px] border border-[var(--line)] bg-[var(--surface)] px-2.5 font-sans text-[12px] font-medium text-[var(--text)] focus:ring-0 sm:max-w-none"
                 >
-                  <span className="text-[var(--text-muted)]">Sources: </span>
+                  <span className="hidden text-[var(--text-muted)] sm:inline">Sources: </span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent align="start" className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)]">
@@ -375,12 +375,12 @@ export function Composer({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             {loading ? (
               <Button
                 type="button"
                 onClick={onStop}
-                className="min-h-[44px] rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-5 font-sans text-[13px] font-medium text-[var(--warn-text)] hover:opacity-90"
+                className="min-h-[44px] rounded-[3px] border border-[var(--warn-border)] bg-[var(--warn-bg)] px-4 font-sans sm:px-5 text-[13px] font-medium text-[var(--warn-text)] hover:opacity-90"
                 aria-label="Stop current query"
               >
                 Stop
@@ -391,14 +391,14 @@ export function Composer({
                 onClick={handleSend}
                 disabled={!canSend}
                 className={cn(
-                  "min-h-[44px] min-w-[96px] gap-2 rounded-[3px] px-5 font-sans text-[13px] font-medium transition-all",
+                  "min-h-[44px] min-w-[44px] gap-2 rounded-[3px] px-3 font-sans sm:min-w-[96px] sm:px-5 text-[13px] font-medium transition-all",
                   canSend
                     ? "bg-[var(--ink)] text-[var(--on-ink)] hover:bg-[var(--ink-2)]"
                     : "bg-[var(--chip-bg)] text-[var(--text-muted)] cursor-not-allowed opacity-60",
                 )}
                 aria-label="Submit query"
               >
-                <span>Submit</span>
+                <span className="hidden sm:inline">Submit</span>
                 <ArrowUp className="h-4 w-4" />
               </Button>
             )}

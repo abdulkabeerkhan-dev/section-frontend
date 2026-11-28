@@ -109,15 +109,15 @@ export function AnswerBrief({ brief, answerText, onFollowUp, onOpenPdf }: Answer
 
       <div className="flex flex-col gap-7 min-[1100px]:flex-row min-[1100px]:items-start">
         <div className="flex min-w-0 flex-col gap-5" style={{ flex: "999 1 560px" }}>
-          <section className={cn(card, "px-6 py-5")}>
+          <section className={cn(card, "px-4 py-4 sm:px-6 sm:py-5")}>
             <h3 className={cn(label, "mb-2")}>Short answer</h3>
-            <p className="m-0 font-serif text-[19px] leading-[1.6] text-[var(--text)]">
+            <p className="m-0 font-serif text-[17px] leading-[1.6] sm:text-[19px] text-[var(--text)]">
               {withCites(brief.summary)}
             </p>
           </section>
 
           {brief.points.length > 0 && (
-            <section className={cn(card, "px-6 py-5")}>
+            <section className={cn(card, "px-4 py-4 sm:px-6 sm:py-5")}>
               <h3 className={cn(label, "mb-3")}>How the law applies</h3>
               <ol className="m-0 flex list-none flex-col gap-4 p-0">
                 {brief.points.map((pt, i) => (
@@ -147,7 +147,7 @@ export function AnswerBrief({ brief, answerText, onFollowUp, onOpenPdf }: Answer
           )}
 
           {brief.checklist.length > 0 && (
-            <section className={cn(card, "px-6 py-5")}>
+            <section className={cn(card, "px-4 py-4 sm:px-6 sm:py-5")}>
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className={label}>Before you proceed</h3>
                 <span className="font-sans text-[13px] text-[var(--text-muted)]">
@@ -181,7 +181,7 @@ export function AnswerBrief({ brief, answerText, onFollowUp, onOpenPdf }: Answer
           )}
 
           {(brief.verify.length > 0 || brief.gaps.length > 0) && (
-            <section className={cn(card, "px-6 py-5")}>
+            <section className={cn(card, "px-4 py-4 sm:px-6 sm:py-5")}>
               {brief.verify.length > 0 && (
                 <>
                   <h3 className={cn(label, "mb-2")}>Points to verify</h3>
