@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useSignIn, useAuth } from "@clerk/clerk-react";
+import { useSignIn, useAuth, useClerk } from "@clerk/clerk-react";
 import { Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 import { RequestAccessModal } from "@/components/amicus/RequestAccessModal";
+import { requestPasswordTicket } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/auth")({
@@ -29,6 +30,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isSignedIn } = useAuth();
+  const clerk = useClerk();
   const { theme, toggle: toggleTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -142,7 +144,12 @@ function AuthPage() {
         });
         await continueAfter(result);
       } else if (mode === "password") {
-        const result = await signIn.create({ identifier: email.trim(), password });
+        // Password checked by our backend -> one-time ticket, so no new-device email code.
+        // If the backend cannot be reached, fall back to Clerk's own password flow.
+        const ticket = await requestPasswordTicket(email.trim(), password);
+        const result = ticket
+          ? await signIn.create({ strategy: "ticket", ticket })
+          : await signIn.create({ identifier: email.trim(), password });
         await continueAfter(result);
       } else if (!codeSent) {
         await sendCode();
@@ -163,11 +170,21 @@ function AuthPage() {
         await continueAfter(result);
       }
     } catch (err: unknown) {
+      const first = (err as ClerkError)?.errors?.[0];
       if (
-        (err as ClerkError)?.errors?.[0]?.code === "session_already_active" ||
-        String(err).includes("already active")
+        first?.code === "session_exists" ||
+        first?.code === "session_already_active" ||
+        /already (signed in|active)/i.test(`${first?.message ?? ""} ${String(err)}`)
       ) {
+        // A session already exists on this browser: make it the active one and go in.
+        const existing = clerk.client?.activeSessions?.[0] ?? clerk.client?.sessions?.[0];
+        if (existing) await clerk.setActive({ session: existing.id });
         navigate({ to: "/app" });
+        return;
+      }
+      if (err instanceof Error && !first) {
+        setError(err.message);
+        toast.error(err.message);
         return;
       }
       const fallback =
