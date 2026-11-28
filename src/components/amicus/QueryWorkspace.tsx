@@ -42,7 +42,12 @@ const TRY_ASKING = [
   "Find precedents on quashment of an FIR under section 561-A CrPC in cheque cases",
   "What remedies does a buyer have if the seller refuses to execute a sale deed?",
 ];
-import { Composer, type ComposerAttachment, type BackendModeChoice } from "./Composer";
+import {
+  Composer,
+  type ComposerAttachment,
+  type BackendModeChoice,
+  type ComposerSegment,
+} from "./Composer";
 import { LoadingState } from "./LoadingState";
 import { CaseListSkeleton } from "./CaseCardSkeleton";
 import { ResultsPanel } from "./ResultsPanel";
@@ -240,7 +245,22 @@ export function QueryWorkspace() {
     mode: Mode;
     attachments: ComposerAttachment[];
   } | null>(null);
-  const [modeChoice, setModeChoice] = useState<BackendModeChoice>("auto");
+  // Jurist only researches and Counsel only drafts; the general workspace keeps auto-detection.
+  const lockedMode: Mode | null =
+    assistant === "ark" || assistant === "jurist"
+      ? "research"
+      : assistant === "mike" || assistant === "counsel"
+        ? "draft"
+        : null;
+  const allowedModes: ComposerSegment[] =
+    lockedMode === "research"
+      ? ["research", "summarize"]
+      : lockedMode === "draft"
+        ? ["draft", "summarize"]
+        : ["research", "draft", "summarize"];
+  const [modeChoice, setModeChoice] = useState<BackendModeChoice>(
+    lockedMode === "draft" ? "drafting" : "auto",
+  );
   const [era, setEra] = useState<JurisprudenceEra>("all");
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
   const [quotaResetIso, setQuotaResetIso] = useState<string | null>(null);
@@ -398,7 +418,9 @@ export function QueryWorkspace() {
     const threadId = activeThreadId ?? crypto.randomUUID();
     if (!activeThreadId) setActiveThreadId(threadId);
 
-    const { mode, docType } = inferIntent(q);
+    const inferred = inferIntent(q);
+    const mode: Mode = lockedMode ?? inferred.mode;
+    const docType = inferred.docType;
 
     const images: QueryImage[] = attachments
       .filter((a) => a.image_base64 && a.image_mime_type)
@@ -613,6 +635,7 @@ export function QueryWorkspace() {
                   seed={seed}
                   modeChoice={modeChoice}
                   onModeChoiceChange={setModeChoice}
+                  allowedModes={allowedModes}
                   era={era}
                   onEraChange={setEra}
                 />
@@ -901,6 +924,7 @@ export function QueryWorkspace() {
                   onStop={stopGenerate}
                   modeChoice={modeChoice}
                   onModeChoiceChange={setModeChoice}
+                  allowedModes={allowedModes}
                   era={era}
                   onEraChange={setEra}
                 />

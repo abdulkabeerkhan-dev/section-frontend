@@ -35,6 +35,8 @@ const COMPRESS_THRESHOLD_BYTES = 900 * 1024;
 const MAX_PROMPT_CHARS = 120_000;
 const MAX_PROMPT_WORDS = 30_000;
 
+export type ComposerSegment = "research" | "draft" | "summarize";
+
 interface ComposerProps {
   onSend: (question: string, attachments: ComposerAttachment[]) => void;
   loading: boolean;
@@ -45,6 +47,8 @@ interface ComposerProps {
   onStop?: () => void;
   modeChoice?: BackendModeChoice;
   onModeChoiceChange?: (mode: BackendModeChoice) => void;
+  /** Which mode buttons this assistant offers (Jurist: research; Counsel: draft). */
+  allowedModes?: ComposerSegment[];
   era?: JurisprudenceEra;
   onEraChange?: (era: JurisprudenceEra) => void;
 }
@@ -141,6 +145,7 @@ export function Composer({
   onStop,
   modeChoice = "auto",
   onModeChoiceChange,
+  allowedModes = ["research", "draft", "summarize"],
   era = "all",
   onEraChange,
 }: ComposerProps) {
@@ -148,7 +153,7 @@ export function Composer({
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [processing, setProcessing] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [segmentedMode, setSegmentedMode] = useState<"research" | "draft" | "summarize">("research");
+  const [segmentedMode, setSegmentedMode] = useState<ComposerSegment>(allowedModes[0] ?? "research");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -236,51 +241,57 @@ export function Composer({
         {/* Segmented Control on top row: Research | Draft | Summarize */}
         <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface-2)] px-4 py-2">
           <div className="flex items-center gap-1 rounded-[3px] bg-[var(--chip-bg)] p-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                setSegmentedMode("research");
-                onModeChoiceChange?.("caselaw_search");
-              }}
-              className={cn(
-                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
-                segmentedMode === "research"
-                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
-              )}
-            >
-              Research
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSegmentedMode("draft");
-                onModeChoiceChange?.("drafting");
-              }}
-              className={cn(
-                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
-                segmentedMode === "draft"
-                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
-              )}
-            >
-              Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSegmentedMode("summarize");
-                onModeChoiceChange?.("document_analysis");
-              }}
-              className={cn(
-                "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
-                segmentedMode === "summarize"
-                  ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)]",
-              )}
-            >
-              Summarize
-            </button>
+            {allowedModes.includes("research") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSegmentedMode("research");
+                  onModeChoiceChange?.("caselaw_search");
+                }}
+                className={cn(
+                  "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                  segmentedMode === "research"
+                    ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]",
+                )}
+              >
+                Research
+              </button>
+            )}
+            {allowedModes.includes("draft") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSegmentedMode("draft");
+                  onModeChoiceChange?.("drafting");
+                }}
+                className={cn(
+                  "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                  segmentedMode === "draft"
+                    ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]",
+                )}
+              >
+                Draft
+              </button>
+            )}
+            {allowedModes.includes("summarize") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSegmentedMode("summarize");
+                  onModeChoiceChange?.("document_analysis");
+                }}
+                className={cn(
+                  "rounded-[3px] px-3 py-1 font-sans text-[12px] font-semibold transition-all",
+                  segmentedMode === "summarize"
+                    ? "bg-[var(--ink)] text-[var(--on-ink)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]",
+                )}
+              >
+                Summarize
+              </button>
+            )}
           </div>
 
           <span className="font-sans text-[11px] text-[var(--text-muted)]">

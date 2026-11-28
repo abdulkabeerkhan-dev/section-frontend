@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { QueryWorkspace } from "@/components/amicus/QueryWorkspace";
 import { SessionGuard } from "@/components/amicus/SessionGuard";
-import { PleadingCanvas } from "@/components/amicus/PleadingCanvas";
 import { AssistantProvider } from "@/lib/assistant";
 
 export const Route = createFileRoute("/_authenticated/assistants/ark")({
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/_authenticated/assistants/ark")({
     <SessionGuard>
       <AssistantProvider id="ark">
         <QueryWorkspace />
-        <PleadingCanvas />
       </AssistantProvider>
     </SessionGuard>
   ),
