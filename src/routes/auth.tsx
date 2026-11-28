@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSignIn, useAuth, useClerk } from "@clerk/clerk-react";
-import { Loader2, Moon, Sun } from "lucide-react";
+import { Eye, EyeOff, Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 import { RequestAccessModal } from "@/components/amicus/RequestAccessModal";
 import { requestPasswordTicket } from "@/lib/api";
+import { rememberSignIn, rememberedEmail } from "@/lib/remember-me";
 import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/auth")({
@@ -32,7 +33,9 @@ function AuthPage() {
   const { isSignedIn } = useAuth();
   const clerk = useClerk();
   const { theme, toggle: toggleTheme } = useTheme();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => rememberedEmail());
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +75,7 @@ function AuthPage() {
 
   async function finish(result: Attempt) {
     if (result?.status === "complete" && result.createdSessionId) {
+      rememberSignIn(remember, email.trim());
       await setActive!({ session: result.createdSessionId });
       navigate({ to: "/app" });
       return true;
@@ -311,19 +315,38 @@ function AuthPage() {
                 <label htmlFor="password" className="sr-only">
                   {mode === "reset" ? "New password" : "Password"}
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={mode === "reset" ? 8 : undefined}
-                  autoComplete={mode === "reset" ? "new-password" : "current-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={inputClass}
-                  placeholder={mode === "reset" ? "New password (8+ characters)" : "Password"}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={mode === "reset" ? 8 : undefined}
+                    autoComplete={mode === "reset" ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputClass} pr-11`}
+                    placeholder={mode === "reset" ? "New password (8+ characters)" : "Password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </>
             )}
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="size-4 accent-[var(--ink)]"
+              />
+              Remember me
+            </label>
             <button
               type="submit"
               disabled={loading}
