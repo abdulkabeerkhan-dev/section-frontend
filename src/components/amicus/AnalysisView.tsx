@@ -1,3 +1,4 @@
+import { RESEARCH_MARKER } from "@/lib/draft-intent";
 import { useState, useMemo } from "react";
 import { Copy, Check, FileDown, Loader2, ArrowRight, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -590,7 +591,8 @@ export function AnalysisView({
                 onClick={() => {
                   try {
                     const memo = raw || text || "";
-                    const prompt = `Draft court-ready pleadings (plaint / petition / written statement) based on the following verified research memorandum:\n\n${memo.trim()}`;
+                    // No document type here: Counsel asks what to draft and for which court.
+                    const prompt = `Prepare the court document for this matter using the research below.\n\n${RESEARCH_MARKER}\n${memo.trim()}`;
                     sessionStorage.setItem("section_counsel_handoff", JSON.stringify({ prompt }));
                   } catch {
                     // ignore
