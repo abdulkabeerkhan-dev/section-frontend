@@ -65,6 +65,8 @@ import { NameOnboarding } from "./NameOnboarding";
 
 import { QuotaLimitDialog } from "./QuotaLimitDialog";
 import { DOC_TYPES } from "./InputPanel";
+import { DraftClarifier } from "./DraftClarifier";
+import { detectCourt, detectDocument, withDraftChoice } from "@/lib/draft-intent";
 import type { Mode, QueryDocument, QueryImage } from "@/lib/api";
 
 // Prompt limits mirrored from Composer as a server-side guard.
@@ -258,6 +260,12 @@ export function QueryWorkspace() {
       : lockedMode === "draft"
         ? ["draft", "summarize"]
         : ["research", "draft", "summarize"];
+  const [pendingDraft, setPendingDraft] = useState<{
+    question: string;
+    attachments: ComposerAttachment[];
+    document: string | null;
+    court: string | null;
+  } | null>(null);
   const [modeChoice, setModeChoice] = useState<BackendModeChoice>(
     lockedMode === "draft" ? "drafting" : "auto",
   );
@@ -390,7 +398,7 @@ export function QueryWorkspace() {
     setMobileNavOpen(false);
   }
 
-  async function send(question: string, attachments: ComposerAttachment[]) {
+  async function send(question: string, attachments: ComposerAttachment[], draftConfirmed = false) {
     if (!isLoaded) return;
 
     const q = question.trim();
@@ -413,6 +421,16 @@ export function QueryWorkspace() {
         `Prompt exceeds the limit of ${MAX_PROMPT_WORDS.toLocaleString()} words or ${MAX_PROMPT_CHARS.toLocaleString()} characters.`,
       );
       return;
+    }
+
+    // Counsel drafts only once it knows what to draft and for which court; otherwise it asks.
+    if (lockedMode === "draft" && !draftConfirmed) {
+      const document = detectDocument(q);
+      const court = detectCourt(q);
+      if (!document || !court) {
+        setPendingDraft({ question: q, attachments, document, court });
+        return;
+      }
     }
 
     const threadId = activeThreadId ?? crypto.randomUUID();
@@ -458,7 +476,7 @@ export function QueryWorkspace() {
     if (assistant) request.assistant = (assistant === "counsel" ? "mike" : assistant === "jurist" ? "ark" : assistant);
     if (modeChoice !== "auto") request.backend_mode = modeChoice;
     if (era !== "all") request.era = era;
-    if (mode === "draft") request.doc_type = docType ?? "Civil Suit";
+    if (mode === "draft" && docType) request.doc_type = docType;
     if (attachments.length > 0) {
       const names = attachments.map((a) => a.name);
       request.has_attachment = true;
@@ -627,6 +645,21 @@ export function QueryWorkspace() {
 
               {/* Ask Box */}
               <div className="mt-8">
+                {pendingDraft && (
+                  <DraftClarifier
+                    initialDocument={pendingDraft.document}
+                    initialCourt={pendingDraft.court}
+                    onCancel={() => {
+                      seedComposer(pendingDraft.question);
+                      setPendingDraft(null);
+                    }}
+                    onConfirm={(document, court) => {
+                      const p = pendingDraft;
+                      setPendingDraft(null);
+                      void send(withDraftChoice(p.question, document, court), p.attachments, true);
+                    }}
+                  />
+                )}
                 <Composer
                   onSend={send}
                   loading={false}
@@ -914,6 +947,21 @@ export function QueryWorkspace() {
 
             <div className="border-t border-border bg-background px-3 py-4 sm:px-8">
               <div className="mx-auto max-w-[1440px]">
+                {pendingDraft && (
+                  <DraftClarifier
+                    initialDocument={pendingDraft.document}
+                    initialCourt={pendingDraft.court}
+                    onCancel={() => {
+                      seedComposer(pendingDraft.question);
+                      setPendingDraft(null);
+                    }}
+                    onConfirm={(document, court) => {
+                      const p = pendingDraft;
+                      setPendingDraft(null);
+                      void send(withDraftChoice(p.question, document, court), p.attachments, true);
+                    }}
+                  />
+                )}
                 <Composer
                   onSend={send}
                   loading={status === "loading"}
