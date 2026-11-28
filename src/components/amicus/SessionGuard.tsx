@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
+import { shouldEndSessionOnBrowserClose } from "@/lib/remember-me";
 import { clearLocalUserData, useMe, useLogout } from "@/lib/useMe";
 import { Wordmark } from "./Wordmark";
 
@@ -64,8 +65,14 @@ export function SessionGuard({ children, requireAdmin = false }: SessionGuardPro
     if (!isLoaded) return;
     if (!isSignedIn) {
       navigate({ to: "/auth" });
+      return;
     }
-  }, [isLoaded, isSignedIn, navigate]);
+    // Signed in without "Remember me" and the browser has since been closed: end the session.
+    if (shouldEndSessionOnBrowserClose()) {
+      clearLocalUserData();
+      signOut().then(() => navigate({ to: "/auth" }));
+    }
+  }, [isLoaded, isSignedIn, navigate, signOut]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !me) return;
