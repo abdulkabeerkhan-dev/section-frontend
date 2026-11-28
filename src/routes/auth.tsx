@@ -39,6 +39,8 @@ function AuthPage() {
   // "reset": a code plus a new password (accounts without a password set one here)
   const [mode, setMode] = useState<"password" | "code" | "reset">("password");
   const [codeSent, setCodeSent] = useState(false);
+  // Clerk asks for an emailed code on a new device after the password ("client trust")
+  const [secondFactor, setSecondFactor] = useState(false);
   const [code, setCode] = useState("");
 
   useEffect(() => {
@@ -46,7 +48,11 @@ function AuthPage() {
   }, [isLoaded, isSignedIn, navigate]);
 
   type ClerkError = { errors?: { code?: string; message?: string; longMessage?: string }[] };
-  type Attempt = { status: string | null; createdSessionId: string | null };
+  type Attempt = {
+    status: string | null;
+    createdSessionId: string | null;
+    supportedSecondFactors?: { strategy: string; emailAddressId?: string }[] | null;
+  };
 
   function errMessage(err: unknown, fallback: string) {
     const first = (err as ClerkError)?.errors?.[0];
@@ -56,6 +62,7 @@ function AuthPage() {
   function switchMode(next: "password" | "code" | "reset") {
     setMode(next);
     setCodeSent(false);
+    setSecondFactor(false);
     setCode("");
     setPassword("");
     setError(null);
@@ -68,6 +75,27 @@ function AuthPage() {
       return true;
     }
     return false;
+  }
+
+  // After a first factor Clerk may still want an emailed code (new device / client trust).
+  async function continueAfter(result: Attempt) {
+    if (await finish(result)) return;
+    if (result.status === "needs_second_factor" || result.status === "needs_client_trust") {
+      const factor = result.supportedSecondFactors?.find((f) => f.strategy === "email_code");
+      if (factor?.emailAddressId) {
+        await signIn!.prepareSecondFactor({
+          strategy: "email_code",
+          emailAddressId: factor.emailAddressId,
+        });
+        setCode("");
+        setSecondFactor(true);
+        toast.success("For your security we emailed you a code. Enter it to finish signing in.");
+        return;
+      }
+    }
+    setError(
+      `Sign in needs a step this page does not support yet (${result.status ?? "unknown"}). Use "Email me a sign-in code" instead.`,
+    );
   }
 
   async function sendCode() {
@@ -107,11 +135,15 @@ function AuthPage() {
 
     setLoading(true);
     try {
-      if (mode === "password") {
+      if (secondFactor) {
+        const result = await signIn.attemptSecondFactor({
+          strategy: "email_code",
+          code: code.trim(),
+        });
+        await continueAfter(result);
+      } else if (mode === "password") {
         const result = await signIn.create({ identifier: email.trim(), password });
-        if (await finish(result)) return;
-        setError("Additional verification is required for this account.");
-        toast.error("Additional verification required.");
+        await continueAfter(result);
       } else if (!codeSent) {
         await sendCode();
       } else if (mode === "code") {
@@ -119,8 +151,7 @@ function AuthPage() {
           strategy: "email_code",
           code: code.trim(),
         });
-        if (await finish(result)) return;
-        setError("Additional verification is required for this account.");
+        await continueAfter(result);
       } else {
         let result: Attempt = await signIn.attemptFirstFactor({
           strategy: "reset_password_email_code",
@@ -129,8 +160,7 @@ function AuthPage() {
         });
         if (result.status === "needs_new_password")
           result = await signIn.resetPassword({ password });
-        if (await finish(result)) return;
-        setError("Additional verification is required for this account.");
+        await continueAfter(result);
       }
     } catch (err: unknown) {
       if (
@@ -152,8 +182,11 @@ function AuthPage() {
     }
   }
 
-  const submitLabel =
-    mode === "password"
+  const submitLabel = secondFactor
+    ? loading
+      ? "Checking"
+      : "Verify and sign in"
+    : mode === "password"
       ? loading
         ? "Signing in"
         : "Sign in"
@@ -216,11 +249,13 @@ function AuthPage() {
           <p className="label-caps">Invitation only</p>
           <h1 className="mt-3 font-serif text-5xl">Welcome back</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "password"
-              ? "Sign in to continue to Section."
-              : mode === "code"
-                ? "We'll email you a one-time code to sign in."
-                : "We'll email you a code, then you choose a new password."}
+            {secondFactor
+              ? "We emailed you a code to confirm it's you. Enter it below."
+              : mode === "password"
+                ? "Sign in to continue to Section."
+                : mode === "code"
+                  ? "We'll email you a one-time code to sign in."
+                  : "We'll email you a code, then you choose a new password."}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-3">
@@ -237,7 +272,7 @@ function AuthPage() {
               className={inputClass}
               placeholder="Email"
             />
-            {codeSent && (
+            {(codeSent || secondFactor) && (
               <>
                 <label htmlFor="code" className="sr-only">
                   Code from your email
@@ -254,7 +289,7 @@ function AuthPage() {
                 />
               </>
             )}
-            {(mode === "password" || (mode === "reset" && codeSent)) && (
+            {!secondFactor && (mode === "password" || (mode === "reset" && codeSent)) && (
               <>
                 <label htmlFor="password" className="sr-only">
                   {mode === "reset" ? "New password" : "Password"}
