@@ -6,10 +6,6 @@ import { toast } from "sonner";
 
 import { Wordmark } from "@/components/amicus/Wordmark";
 
-const heroVideo = {
-  url: "/__l5e/assets-v1/23bc3d5d-86e3-4ed3-8b5c-45ab88e2c6e4/hero-law.mp4",
-};
-
 export const Route = createFileRoute("/accept-invitation")({
   head: () => ({
     meta: [
@@ -103,21 +99,6 @@ function AcceptInvitationPage() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <video
-          className="hero-video-zoom absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        >
-          <source src={heroVideo.url} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-background/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
-        <div className="absolute inset-0 shadow-[inset_0_0_240px_70px_rgba(0,0,0,0.8)]" />
-      </div>
 
       <div className="relative z-10 w-full max-w-[400px]">
         <div className="mb-8 flex justify-center">

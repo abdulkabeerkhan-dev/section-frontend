@@ -379,7 +379,8 @@ export function QueryWorkspace() {
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    // Only follow new answers; the empty home screen must open at the top.
+    if (el && (activeTurns.length > 0 || status === "loading")) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [activeTurns.length, status]);
 
   function startNewMatter() {
@@ -756,7 +757,7 @@ export function QueryWorkspace() {
               </section>
 
               {/* Two cards: Recent matters and Upcoming deadlines */}
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(18,18,18,0.04)]">
                   <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                     RECENT MATTERS
