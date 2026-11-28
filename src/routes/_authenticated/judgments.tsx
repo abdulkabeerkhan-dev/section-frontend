@@ -313,22 +313,22 @@ function JudgmentsPage() {
   return (
     <SearchShell title="Judgment Search" subtitle="Search superior court judgments from 1947 to 2026 across SCMR, PLD, YLR, CLC, and other reporters.">
       <Tabs defaultValue="citation" className="space-y-8">
-        <TabsList className="h-11 rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-1">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start rounded-[3px] border border-[var(--line)] bg-[var(--surface-2)] p-1">
           <TabsTrigger
             value="citation"
-            className="h-9 rounded-[3px] px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
+            className="h-9 rounded-[3px] px-3 sm:px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
           >
             Citation Lookup
           </TabsTrigger>
           <TabsTrigger
             value="keyword"
-            className="h-9 rounded-[3px] px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
+            className="h-9 rounded-[3px] px-3 sm:px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
           >
             Keyword Search
           </TabsTrigger>
           <TabsTrigger
             value="intelligent"
-            className="h-9 rounded-[3px] px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
+            className="h-9 rounded-[3px] px-3 sm:px-5 font-sans text-[13px] font-medium text-[var(--text-muted)] data-[state=active]:bg-[var(--ink)] data-[state=active]:text-[var(--on-ink)]"
           >
             Intelligent Search
           </TabsTrigger>

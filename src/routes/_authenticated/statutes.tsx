@@ -95,7 +95,7 @@ function StatutesPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                    {r.canonical_id.replace(/_/g, " ")}
+                    {r.label}
                   </span>
                   <h2 className="mt-1 font-serif text-[20px] font-bold text-[var(--text)]">{r.title}</h2>
                 </div>
@@ -131,7 +131,7 @@ function StatutesPage() {
         <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto rounded-[3px] border border-[var(--line)] bg-[var(--surface)] p-8 text-[var(--text)]">
           <DialogHeader>
             <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-              {open?.canonical_id.replace(/_/g, " ")}
+              {open?.label}
             </p>
             <DialogTitle className="mt-1 font-serif text-[26px] font-bold text-[var(--ink)]">
               {full?.title || open?.title}
