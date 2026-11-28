@@ -9,7 +9,7 @@ const BASE = (
   "https://lawyer-backend-production-5c6d.up.railway.app"
 ).replace(/\/$/, "");
 
-async function clerkToken(): Promise<string | null> {
+export async function clerkToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   const clerk = (
     window as unknown as { Clerk?: { session?: { getToken: () => Promise<string | null> } } }

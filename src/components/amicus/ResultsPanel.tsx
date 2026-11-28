@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { backendLink, type BackendMode, type GenerateResponse, type Mode, type PrecedentCard } from "@/lib/api";
 import { AnswerBrief } from "./AnswerBrief";
+import { openPdf } from "@/lib/pdf-open";
 import { DocumentView } from "./DocumentView";
 import { AnalysisView } from "./AnalysisView";
 import { JudgmentReaderDrawer } from "./JudgmentReaderDrawer";
@@ -466,7 +467,7 @@ export function ResultsPanel({
           onFollowUp={onFollowUp}
           onOpenPdf={(url) => {
             const href = backendLink(url);
-            if (href) window.open(href, "_blank", "noopener,noreferrer");
+            if (href) void openPdf(href);
           }}
         />
         {answerFooter && <div className="mt-4">{answerFooter}</div>}

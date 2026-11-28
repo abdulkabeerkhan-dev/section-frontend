@@ -1,3 +1,4 @@
+import { fetchPdfObjectUrl } from "@/lib/pdf-open";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Download, Loader2, ShieldCheck, BookOpen, FileText, ExternalLink } from "lucide-react";
 import { useAuth } from "@clerk/clerk-react";
@@ -169,16 +170,7 @@ export function JudgmentReaderDrawer({ card, open, onOpenChange }: JudgmentReade
 
     void (async () => {
       try {
-        const response = await fetch(activePdfUrl, { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error(`PDF request failed with HTTP ${response.status}.`);
-        }
-        const blob = await response.blob();
-        const header = await blob.slice(0, 1024).text();
-        if (!header.includes("%PDF-")) {
-          throw new Error("The server response was not a PDF document.");
-        }
-        objectUrl = URL.createObjectURL(blob);
+        objectUrl = await fetchPdfObjectUrl(activePdfUrl, controller.signal);
         setPdfObjectUrl(objectUrl);
       } catch (err) {
         if (!timedOut && !controller.signal.aborted) {
