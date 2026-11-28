@@ -361,7 +361,7 @@ export function Composer({
                   aria-label="Sources repository filter"
                   className="h-9 min-h-[36px] w-auto min-w-0 max-w-[60vw] gap-1 truncate rounded-[3px] border border-[var(--line)] bg-[var(--surface)] px-2.5 font-sans text-[12px] font-medium text-[var(--text)] focus:ring-0 sm:max-w-none"
                 >
-                  <span className="hidden text-[var(--text-muted)] sm:inline">Sources: </span>
+                  <b className="hidden font-medium text-[var(--text-muted)] sm:inline">Sources: </b>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent align="start" className="rounded-[3px] border border-[var(--line)] bg-[var(--surface)]">
