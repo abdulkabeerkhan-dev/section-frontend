@@ -276,6 +276,39 @@ const BASE_URL =
   "https://lawyer-backend-production-5c6d.up.railway.app";
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
 
+/**
+ * Email + password sign-in through the backend, which checks the password with Clerk and returns
+ * a one-time sign-in ticket (no new-device email code). Returns the ticket, or throws an Error
+ * whose message is safe to show. Resolves to null when the backend cannot be reached, so the
+ * caller can fall back to Clerk's own password flow.
+ */
+export async function requestPasswordTicket(
+  email: string,
+  password: string,
+): Promise<string | null> {
+  const b = base();
+  if (!b) return null;
+  let res: Response;
+  try {
+    res = await fetch(`${b}/auth/password-sign-in`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    return null;
+  }
+  if (res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { ticket?: string };
+    return data.ticket || null;
+  }
+  if (res.status === 401 || res.status === 422 || res.status === 429) {
+    const data = (await res.json().catch(() => ({}))) as { detail?: unknown };
+    throw new Error(typeof data.detail === "string" ? data.detail : "Invalid email or password.");
+  }
+  return null;
+}
+
 function base(): string | undefined {
   return BASE_URL ? BASE_URL.replace(/\/$/, "") : undefined;
 }
